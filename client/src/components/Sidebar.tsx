@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             navigate("/");
           }}
         >
-          <DatabaseBackup/>
+          <DatabaseBackup />
         </h3>
         <h3 className="text-xl font-bold text-white">Table Attributes</h3>
       </div>
@@ -245,7 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {(attr.editType === "FK" ||
                               (attr.editType === undefined &&
                                 attr.type === "FK")) && (
-                              <div className="space-y-2 p-3 bg-blue-900 rounded-md border border-blue-700">
+                              <div className="space-y-2 p-3 bg-[#292424] rounded-md border border-blue-700">
                                 <h6 className="text-xs font-medium text-blue-300">
                                   Foreign Key Reference
                                 </h6>
@@ -362,15 +362,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div className="w-full mt-3 flex items-center justify-between gap-3">
                           <button
                             onClick={() => onStartAttrEdit?.(idx)}
-                            className="text-blue-400 hover:text-blue-300 text-sm px-3 py-2 border border-blue-400 rounded-md cursor-pointer"
+                            className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold px-3 py-2 border border-blue-400 rounded-md cursor-pointer"
                           >
-                            edit
+                            Edit
                           </button>
                           <button
                             onClick={() => onDeleteAttribute?.(idx)}
-                            className="text-red-400 hover:text-red-300 text-sm px-3 py-2 border border-red-400 rounded-md cursor-pointer"
+                            className="bg-red-500 hover:bg-red-600 text-white text-sm font-bold px-3 py-2 border border-red-400 rounded-md cursor-pointer"
                           >
-                            delete
+                            Delete
                           </button>
                           <span
                             className={`px-3 py-2 rounded-md text-xs font-medium ${
