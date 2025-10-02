@@ -10,10 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@tailwindcss/vite": "^4.1.14",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "@xyflow/react": "^12.8.6",
+    "framer-motion": "^12.23.22",
+    "lucide": "^0.544.0",
+    "lucide-react": "^0.544.0",
+    "node-sql-parser": "^5.3.12",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.3",
+    "reactflow": "^11.11.4",
     "tailwindcss": "^4.1.14"
   },
   "devDependencies": {

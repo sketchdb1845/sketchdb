@@ -1,12 +1,13 @@
 import { Route, Routes } from "react-router-dom";
 import CanvasPlayground from "./pages/CanvasPlayground";
+import Home from "./pages/Home";
 
 const App = () => {
   return (
-    <div className="bg-black w-screen h-screen overflow-hidden text-white">
+    <div className="bg-[#141414] w-screen h-screen overflow-hidden">
       <Routes>
-        <Route path="/" element={<CanvasPlayground />} />
-        <Route path="/import" element={<CanvasPlayground />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/playground" element={<CanvasPlayground />} />
       </Routes>
     </div>
   );
