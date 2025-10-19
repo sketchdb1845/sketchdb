@@ -4,3 +4,4 @@ export { SQLDialog } from './SQLDialog';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
 export { Toolbar } from './Toolbar';
 export { LoadingDialog } from './LoadingDialog';
+export { default as CustomEdge } from './CustomEdge';

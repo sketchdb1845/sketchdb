@@ -11,6 +11,7 @@ import type {
   Connection,
   Edge,
   Node,
+  EdgeTypes,
   NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -22,6 +23,7 @@ import {
   SQLDialog,
   DeleteConfirmDialog,
   Toolbar,
+  CustomEdge,
   LoadingDialog,
 } from "../components";
 
@@ -39,6 +41,11 @@ import { generateSQL, copyToClipboard } from "../utils/sqlGenerator";
 // Node types configuration
 const nodeTypes: NodeTypes = {
   tableNode: TableNode,
+};
+
+// Edge types configuration
+const edgeTypes: EdgeTypes = {
+  customEdge: CustomEdge,
 };
 
 const initialNodes: Node[] = [];
@@ -95,7 +102,7 @@ export default function CanvasPlayground() {
     setAttrDataType,
     setRefTable,
     setRefAttr,
-    
+
     // FK Helper functions
     getAvailableTables,
   } = useTableManagement(initialNodes, setEdges);
@@ -224,6 +231,7 @@ export default function CanvasPlayground() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -232,7 +240,8 @@ export default function CanvasPlayground() {
           fitView
           connectionLineStyle={{ stroke: "#0074D9", strokeWidth: 3 }}
           defaultEdgeOptions={{
-            style: { stroke: "#0074D9", strokeWidth: 3 },
+            type: "customEdge",
+            style: { stroke: "#0074D9", strokeWidth: 2 },
             markerEnd: { type: "arrowclosed", color: "#0074D9" },
             labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8 },
             labelStyle: { fill: "#0074D9", fontWeight: "bold" },

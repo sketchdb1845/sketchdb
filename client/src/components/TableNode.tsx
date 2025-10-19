@@ -1,43 +1,63 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import type { TableAttribute } from "../types/index";
+import type { TableAttribute } from "../types";
 
 interface TableNodeProps {
   data: {
     label: string;
     attributes: TableAttribute[];
+    color?: string;
   };
   id: string;
 }
 
 export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
   const attributes = Array.isArray(data.attributes) ? data.attributes : [];
+  const tableColor = data.color || '#0074D9'; // Default blue color
 
   return (
-    <div className="bg-white border-2 border-[#0074D9] rounded-lg min-w-[200px] shadow-md relative">
+    <div 
+      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-white"
+      style={{
+        borderColor: tableColor,
+      }}
+    >
       {/* Table Header */}
-      <div className="bg-[#0074D9] text-white px-3 rounded-t-lg font-bold text-center">
+      <div 
+        className="text-white px-3 py-2 rounded-t-lg font-bold text-center"
+        style={{
+          backgroundColor: tableColor,
+        }}
+      >
         {typeof data.label === "string" ? data.label : `Table ${id}`}
       </div>
 
       {/* Attributes List */}
-      <div className="">
+      <div className="py-2">
         {attributes.length > 0 ? (
           attributes.map((attr, idx) => (
             <div
               key={idx}
               className={`px-3 py-1 text-xs flex justify-between items-center relative min-h-[24px] ${
                 idx < attributes.length - 1 ? "border-b border-gray-200" : ""
-              }`}
+              } ${idx % 2 === 0 ? "bg-gray-50" : ""}`}
             >
               {/* Left handle (incoming connections) */}
               <Handle
                 type="target"
                 position={Position.Left}
                 id={`${id}-${attr.name}-target`}
-                className={`!w-2 !h-2 !bg-${
-                  attr.type === "FK" ? "[#FF6B6B]" : "[#0074D9]"
-                } absolute left-[-4px] top-1/2 -translate-y-1/2 rounded-full`}
+                style={{
+                  width: 8,
+                  height: 8,
+                  backgroundColor: attr.type === "FK" ? "#FF6B6B" : tableColor,
+                  position: 'absolute',
+                  left: -4,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  borderRadius: '50%',
+                  border: '1px solid white'
+                }}
               />
 
               {/* Right handle (outgoing connections) */}
@@ -45,9 +65,17 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 type="source"
                 position={Position.Right}
                 id={`${id}-${attr.name}-source`}
-                className={`!w-2 !h-2 !bg-${
-                  attr.type === "PK" ? "[#FFD700]" : "[#0074D9]"
-                } absolute right-[-4px] top-1/2 -translate-y-1/2 rounded-full`}
+                style={{
+                  width: 8,
+                  height: 8,
+                  backgroundColor: attr.type === "PK" ? "#FFD700" : tableColor,
+                  position: 'absolute',
+                  right: -4,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  borderRadius: '50%',
+                  border: '1px solid white'
+                }}
               />
 
               <span className={attr.type === "PK" ? "font-bold" : ""}>
