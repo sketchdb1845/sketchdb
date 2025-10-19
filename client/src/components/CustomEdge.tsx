@@ -19,13 +19,11 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
   sourcePosition,
   targetPosition,
   style = {},
-  data,
   markerEnd,
   markerStart,
   label,
   labelStyle,
   labelShowBg,
-  labelBgStyle,
   labelBgPadding,
   labelBgBorderRadius,
 }) => {
@@ -88,8 +86,8 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
         path={edgePath}
         markerEnd={markerEnd}
         markerStart={markerStart}
+        className="stroke-blue-600"
         style={{
-          stroke: '#0074D9',
           strokeWidth: 2,
           ...style,
         }}
@@ -100,15 +98,12 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              fontSize: 10,
-              fontWeight: 'bold',
-              color: '#0074D9',
               background: labelShowBg ? '#ffffff' : 'transparent',
               padding: labelBgPadding?.[0] || 2,
               borderRadius: labelBgBorderRadius || 2,
               ...labelStyle,
             }}
-            className="nodrag nopan"
+            className="text-xs font-bold text-blue-600 nodrag nopan"
           >
             {label}
           </div>

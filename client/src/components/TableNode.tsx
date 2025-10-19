@@ -13,21 +13,14 @@ interface TableNodeProps {
 
 export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
   const attributes = Array.isArray(data.attributes) ? data.attributes : [];
-  const tableColor = data.color || '#0074D9'; // Default blue color
 
   return (
     <div 
-      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-white"
-      style={{
-        borderColor: tableColor,
-      }}
+      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-white border-blue-500"
     >
       {/* Table Header */}
       <div 
-        className="text-white px-3 py-2 rounded-t-lg font-bold text-center"
-        style={{
-          backgroundColor: tableColor,
-        }}
+        className="text-white px-3 py-2 rounded-t-lg font-bold text-center bg-blue-500"
       >
         {typeof data.label === "string" ? data.label : `Table ${id}`}
       </div>
@@ -50,7 +43,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 style={{
                   width: 8,
                   height: 8,
-                  backgroundColor: attr.type === "FK" ? "#FF6B6B" : tableColor,
+                  backgroundColor: attr.type === "FK" ? "#FF6B6B" : "#0074D9",
                   position: 'absolute',
                   left: -4,
                   top: '50%',
@@ -68,7 +61,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 style={{
                   width: 8,
                   height: 8,
-                  backgroundColor: attr.type === "PK" ? "#FFD700" : tableColor,
+                  backgroundColor: attr.type === "PK" ? "#FFD700" : "#0074D9",
                   position: 'absolute',
                   right: -4,
                   top: '50%',

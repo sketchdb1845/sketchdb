@@ -78,8 +78,6 @@ export const createEdgesFromForeignKeys = (nodes: Node[]): Edge[] => {
     const tableData = node.data as any; // Type assertion for table data
     if (!tableData || !tableData.attributes || !Array.isArray(tableData.attributes)) return;
     
-    const sourceColor = tableData.color || '#0074D9'; // Use table color for edges
-    
     tableData.attributes.forEach((attr: any) => {
       // Check if this attribute is a foreign key
       if (attr.type === 'FK' && attr.refTable && attr.refAttr) {

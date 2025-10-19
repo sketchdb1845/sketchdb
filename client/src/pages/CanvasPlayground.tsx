@@ -43,9 +43,6 @@ import { parseSQLSchema } from "../utils/sqlParser";
 import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
 import { useErrorHandler } from "../utils/errorHandler";
 
-// Types
-import type { AttributeType, DataType } from "../types";
-
 // Node types configuration
 const nodeTypes: NodeTypes = {
   tableNode: TableNode,
@@ -118,10 +115,6 @@ export default function CanvasPlayground() {
     
     // FK Helper functions
     getAvailableTables,
-    getAttributesForTable,
-    validateFKReference,
-    createFKEdge,
-    removeFKEdge,
     importNodes,
   } = useTableManagement(initialNodes, setEdges);
 
@@ -309,10 +302,6 @@ export default function CanvasPlayground() {
       showError(error, 'validation');
     }
   }, [deleteTable, showError]);
-
-  const handleDeleteConfirm = useCallback(() => {
-    setDeleteConfirmOpen(true);
-  }, []);
 
   return (
     <div className="w-screen h-screen flex">

@@ -194,7 +194,7 @@ const parseCreateTableFromAST = (ast: any, tables: ParsedTable[], foreignKeys: P
   }
 };
 
-const parseColumnFromAST = (columnDef: any, tableName: string): TableAttribute | null => {
+const parseColumnFromAST = (columnDef: any, _tableName: string): TableAttribute | null => {
   try {
     const columnName = columnDef.column?.column;
     if (!columnName) return null;
@@ -617,7 +617,7 @@ const validateTables = (tables: ParsedTable[]) => {
   const tableNames = new Set<string>();
   const errors: string[] = [];
   
-  tables.forEach((table, index) => {
+  tables.forEach((table) => {
     // Check for duplicate table names
     if (tableNames.has(table.name)) {
       errors.push(`Duplicate table name: ${table.name}`);

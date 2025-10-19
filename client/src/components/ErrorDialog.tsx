@@ -20,109 +20,33 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: 12,
-          padding: 24,
-          maxWidth: '90%',
-          maxHeight: '80%',
-          width: 500,
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-          border: '2px solid #ef4444',
-        }}
-      >
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1000]">
+      <div className="bg-white rounded-xl p-6 max-w-[90%] max-h-[80%] w-[500px] flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.3)] border-2 border-red-500">
         {/* Header */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          marginBottom: 16,
-          paddingBottom: 12,
-          borderBottom: '1px solid #fee2e2'
-        }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              backgroundColor: '#ef4444',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              marginRight: 12,
-              fontSize: 14,
-            }}
-          >
+        <div className="flex items-center mb-4 pb-3 border-b border-red-100">
+          <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white font-bold mr-3 text-sm">
             !
           </div>
-          <h2 style={{ 
-            margin: 0, 
-            color: '#ef4444',
-            fontSize: 18,
-            fontWeight: 600
-          }}>
+          <h2 className="m-0 text-red-500 text-lg font-semibold">
             {title}
           </h2>
         </div>
         
         {/* Main Message */}
-        <div style={{ marginBottom: 16 }}>
-          <p style={{ 
-            margin: 0,
-            color: '#374151',
-            fontSize: 14,
-            lineHeight: '1.5'
-          }}>
+        <div className="mb-4">
+          <p className="m-0 text-gray-700 text-sm leading-6">
             {message}
           </p>
         </div>
 
         {/* Error Details */}
         {details && (
-          <div style={{ marginBottom: 20 }}>
-            <details style={{ cursor: 'pointer' }}>
-              <summary style={{
-                color: '#6b7280',
-                fontSize: 12,
-                fontWeight: 500,
-                marginBottom: 8,
-                userSelect: 'none'
-              }}>
+          <div className="mb-5">
+            <details className="cursor-pointer">
+              <summary className="text-gray-500 text-xs font-medium mb-2 outline-none">
                 Show Error Details
               </summary>
-              <div
-                style={{
-                  backgroundColor: '#f9fafb',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  padding: 12,
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  color: '#374151',
-                  maxHeight: 150,
-                  overflow: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}
-              >
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-3 font-mono text-xs text-gray-700 max-h-[150px] overflow-auto whitespace-pre-wrap">
                 {details}
               </div>
             </details>
@@ -130,55 +54,18 @@ export const ErrorDialog: React.FC<ErrorDialogProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div style={{
-          display: 'flex',
-          gap: 12,
-          justifyContent: 'flex-end',
-          marginTop: 'auto'
-        }}>
+        <div className="flex gap-3 justify-end mt-auto">
           {onRetry && (
             <button
               onClick={onRetry}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #3b82f6',
-                borderRadius: 6,
-                background: 'white',
-                color: '#3b82f6',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 500,
-                transition: 'all 0.2s',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#eff6ff';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-              }}
+              className="px-4 py-2 border border-blue-500 rounded-md bg-white text-blue-500 cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-blue-50"
             >
               Try Again
             </button>
           )}
           <button
             onClick={onClose}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: 6,
-              background: '#ef4444',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: 14,
-              fontWeight: 500,
-              transition: 'all 0.2s',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#dc2626';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#ef4444';
-            }}
+            className="px-4 py-2 border-none rounded-md bg-red-500 text-white cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-red-600"
           >
             Close
           </button>
