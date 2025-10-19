@@ -1,5 +1,6 @@
 import type  { Node } from '@xyflow/react';
-import { Parser, AST } from 'node-sql-parser';
+import type{AST} from 'node-sql-parser';
+import { Parser } from 'node-sql-parser';
 import type  { TableAttribute, AttributeType, DataType } from '../types';
 import { createEdgesFromForeignKeys } from './connectionUtils';
 

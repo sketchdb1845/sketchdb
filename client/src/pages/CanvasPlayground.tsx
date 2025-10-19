@@ -11,8 +11,8 @@ import type {
   Connection,
   Edge,
   Node,
-  EdgeTypes,
   NodeTypes,
+  EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -21,10 +21,12 @@ import {
   TableNode,
   Sidebar,
   SQLDialog,
+  ImportDialog,
   DeleteConfirmDialog,
   Toolbar,
-  CustomEdge,
   LoadingDialog,
+  ErrorDialog,
+  CustomEdge,
 } from "../components";
 
 // Hooks
@@ -37,6 +39,12 @@ import {
   isValidConnection,
 } from "../utils/connectionUtils";
 import { generateSQL, copyToClipboard } from "../utils/sqlGenerator";
+import { parseSQLSchema } from "../utils/sqlParser";
+import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
+import { useErrorHandler } from "../utils/errorHandler";
+
+// Types
+import type { AttributeType, DataType } from "../types";
 
 // Node types configuration
 const nodeTypes: NodeTypes = {
@@ -54,11 +62,16 @@ const initialEdges: Edge[] = [];
 export default function CanvasPlayground() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Error handling
+  const { error, showError, clearError, retryOperation, hasError } = useErrorHandler();
+
   // Dialog states
   const [sqlDialogOpen, setSqlDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [loadingDialogOpen, setLoadingDialogOpen] = useState(false);
   const [sqlText, setSqlText] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [lastOperation, setLastOperation] = useState<(() => void) | null>(null);
 
   // Table management hook
   const {
@@ -102,64 +115,204 @@ export default function CanvasPlayground() {
     setAttrDataType,
     setRefTable,
     setRefAttr,
-
+    
     // FK Helper functions
     getAvailableTables,
+    getAttributesForTable,
+    validateFKReference,
+    createFKEdge,
+    removeFKEdge,
+    importNodes,
   } = useTableManagement(initialNodes, setEdges);
+
+  // Import schema functionality
+  const importSchema = useCallback((sqlText: string) => {
+    try {
+      // Parse SQL to nodes and edges
+      const { nodes: parsedNodes, edges: parsedEdges } = parseSQLSchema(sqlText);
+      
+      // Replace all nodes and edges with imported ones
+      importNodes(parsedNodes);
+      setEdges(parsedEdges);
+      
+      console.log('Schema imported successfully:', { parsedNodes, parsedEdges });
+    } catch (error) {
+      console.error('Failed to import schema:', error);
+      throw error; // Re-throw to be handled by ImportDialog
+    }
+  }, [importNodes, setEdges]);
+
+  // Import dialog handlers
+  const handleImportSchema = useCallback(() => {
+    setImportDialogOpen(true);
+  }, []);
+
+  const handleImportClose = useCallback(() => {
+    setImportDialogOpen(false);
+  }, []);
+
+  const handleImportError = useCallback((error: any) => {
+    showError(error, 'import');
+    setLastOperation(() => () => setImportDialogOpen(true));
+  }, [showError]);
+
+  // Canvas export handlers
+  const handleExportPNG = useCallback(async () => {
+    try {
+      setLoadingDialogOpen(true);
+      await exportCanvasAsPNG();
+    } catch (error) {
+      console.error("Export PNG failed:", error);
+      showError(error, "export");
+      setLastOperation(() => handleExportPNG);
+    } finally {
+      setLoadingDialogOpen(false);
+    }
+  }, [showError]);
+
+  const handleExportPDF = useCallback(async () => {
+    try {
+      setLoadingDialogOpen(true);
+      await exportCanvasAsPDF();
+    } catch (error) {
+      console.error("Export PDF failed:", error);
+      showError(error, "export");
+      setLastOperation(() => handleExportPDF);
+    } finally {
+      setLoadingDialogOpen(false);
+    }
+  }, [showError]);
 
   // Connection handling
   const onConnect = useCallback(
     (params: Edge | Connection) => {
-      const connectionInfo = parseConnectionHandles(
-        params.sourceHandle || null,
-        params.targetHandle || null
-      );
+      try {
+        const connectionInfo = parseConnectionHandles(
+          params.sourceHandle || null,
+          params.targetHandle || null
+        );
 
-      if (connectionInfo) {
-        updateNodeAttributes(connectionInfo);
+        if (connectionInfo) {
+          updateNodeAttributes(connectionInfo);
+        }
+
+        const newEdge = createStyledEdge(params, nodes);
+        setEdges((eds) => addEdge(newEdge as Connection, eds));
+      } catch (error) {
+        console.error("Failed to create connection:", error);
+        showError(
+          new Error(
+            "Failed to create connection between tables. Please try again."
+          ),
+          "validation"
+        );
       }
-
-      const newEdge = createStyledEdge(params);
-      setEdges((eds) => addEdge(newEdge as Connection, eds));
     },
-    [setEdges, updateNodeAttributes]
+    [setEdges, updateNodeAttributes, showError, nodes]
   );
 
   // Node selection
   const onNodeClick = useCallback(
     (_: any, node: Node) => {
-      setSelectedTableId(node.id);
+      try {
+        setSelectedTableId(node.id);
+      } catch (error) {
+        console.error("Failed to select node:", error);
+        showError(
+          new Error("Failed to select table. Please try again."),
+          "validation"
+        );
+      }
     },
-    [setSelectedTableId]
+    [setSelectedTableId, showError]
   );
 
-  // SQL Export with loading animation
+  // SQL Export with loading animation and error handling
   const exportToSQL = useCallback(() => {
-    setLoadingDialogOpen(true);
-    const sql = generateSQL(nodes);
+    try {
+      setLoadingDialogOpen(true);
 
-    const timeoutId = setTimeout(() => {
+      // Validate nodes before generation
+      if (!nodes || nodes.length === 0) {
+        throw new Error(
+          "No tables available to export. Please create some tables first."
+        );
+      }
+
+      const sql = generateSQL(nodes);
+
+      const timeoutId = setTimeout(() => {
+        setLoadingDialogOpen(false);
+        setSqlText(sql);
+        setSqlDialogOpen(true);
+      }, 1500); // Reduced timeout for better UX
+
+      return timeoutId;
+    } catch (error) {
       setLoadingDialogOpen(false);
-      setSqlText(sql);
-      setSqlDialogOpen(true);
-    }, 2000);
-
-    return timeoutId;
-  }, [nodes]);
+      console.error("SQL export failed:", error);
+      showError(error, "export");
+      setLastOperation(() => exportToSQL);
+    }
+  }, [nodes, showError]);
 
   const handleCancelLoading = useCallback(() => {
     setLoadingDialogOpen(false);
   }, []);
 
   const handleCopySQL = useCallback(() => {
-    copyToClipboard(sqlText);
-  }, [sqlText]);
+    try {
+      copyToClipboard(sqlText);
+      // You could show a success toast here
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      showError(new Error('Failed to copy SQL to clipboard. Please try selecting and copying manually.'), 'export');
+    }
+  }, [sqlText, showError]);
+
+  // Wrapped functions with error handling
+  const handleAddAttribute = useCallback(() => {
+    try {
+      addAttribute();
+    } catch (error) {
+      console.error('Failed to add attribute:', error);
+      showError(error, 'validation');
+    }
+  }, [addAttribute, showError]);
+
+  const handleAddTable = useCallback(() => {
+    try {
+      addTable();
+    } catch (error) {
+      console.error('Failed to add table:', error);
+      showError(error, 'validation');
+    }
+  }, [addTable, showError]);
+
+  // Error handling
+  const handleRetryOperation = useCallback(() => {
+    if (lastOperation) {
+      retryOperation(lastOperation);
+      setLastOperation(null);
+    } else {
+      clearError();
+    }
+  }, [lastOperation, retryOperation, clearError]);
 
   // Delete handlers
   const handleDeleteTable = useCallback(() => {
-    deleteTable();
-    setDeleteConfirmOpen(false);
-  }, [deleteTable]);
+    try {
+      deleteTable();
+      setDeleteConfirmOpen(false);
+    } catch (error) {
+      console.error('Failed to delete table:', error);
+      showError(error, 'validation');
+    }
+  }, [deleteTable, showError]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    setDeleteConfirmOpen(true);
+  }, []);
 
   return (
     <div className="w-screen h-screen flex">
@@ -184,7 +337,7 @@ export default function CanvasPlayground() {
         onAttrTypeChange={setAttrType}
         onRefTableChange={setRefTable}
         onRefAttrChange={setRefAttr}
-        onAddAttribute={addAttribute}
+        onAddAttribute={handleAddAttribute}
         onStartAttrEdit={onStartAttrEdit}
         onAttrEditNameChange={onAttrEditNameChange}
         onAttrEditDataTypeChange={onAttrEditDataTypeChange}
@@ -200,13 +353,27 @@ export default function CanvasPlayground() {
       {/* Main Canvas Area */}
       <div className="flex-1 relative">
         {/* Toolbar */}
-        <Toolbar onAddTable={addTable} onExportSQL={exportToSQL} />
+        <Toolbar
+          onAddTable={handleAddTable}
+          onExportSQL={exportToSQL}
+          onImportSchema={handleImportSchema}
+          onExportPNG={handleExportPNG}
+          onExportPDF={handleExportPDF}
+        />
 
         {/* Loading Dialog */}
         <LoadingDialog
           isOpen={loadingDialogOpen}
           message="Parsing to SQL..."
           onCancel={handleCancelLoading}
+        />
+
+        {/* Import Dialog */}
+        <ImportDialog
+          isOpen={importDialogOpen}
+          onClose={handleImportClose}
+          onImport={importSchema}
+          onError={handleImportError}
         />
 
         {/* SQL Dialog */}
@@ -224,6 +391,16 @@ export default function CanvasPlayground() {
           selectedTableId={selectedTableId}
           onConfirm={handleDeleteTable}
           onCancel={() => setDeleteConfirmOpen(false)}
+        />
+
+        {/* Error Dialog */}
+        <ErrorDialog
+          isOpen={hasError}
+          title={error?.title || 'Error'}
+          message={error?.message || 'An unexpected error occurred'}
+          details={error?.details}
+          onClose={clearError}
+          onRetry={error?.retryable ? handleRetryOperation : undefined}
         />
 
         {/* React Flow */}
