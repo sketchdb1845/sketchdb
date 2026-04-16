@@ -6,6 +6,8 @@ interface ToolbarProps {
   onImportSchema: () => void;
   onExportPNG: () => void;
   onExportPDF: () => void;
+  onSaveProject: () => void;
+  onGoToProjects: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -13,7 +15,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onExportSQL, 
   onImportSchema,
   onExportPNG,
-  onExportPDF 
+  onExportPDF,
+  onSaveProject,
+  onGoToProjects,
 }) => {
   return (
     <div className="absolute top-4 left-4 flex space-x-4 z-10">
@@ -46,6 +50,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         className="cursor-pointer w-[200px] h-[75px] bg-red-500 hover:bg-red-600 text-white rounded-md font-bold"
       >
         Export as PDF
+      </button>
+      <button
+        onClick={onSaveProject}
+        className="cursor-pointer w-[200px] h-[75px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-bold"
+      >
+        Save Project
+      </button>
+      <button
+        onClick={onGoToProjects}
+        className="cursor-pointer w-[200px] h-[75px] bg-slate-700 hover:bg-slate-800 text-white rounded-md font-bold"
+      >
+        My Projects
       </button>
     </div>
   );

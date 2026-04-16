@@ -23,7 +23,12 @@ const Home = () => {
             </p>
 
             <div className="mt-5 flex flex-row xs:flex-row gap-3 sm:gap-4 justify-center lg:justify-start xs:px-0">
-              <button className="cursor-pointer w-full xs:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm sm:text-base">
+              <button
+                onClick={() => {
+                  navigate("/auth?mode=signup");
+                }}
+                className="cursor-pointer w-full xs:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm sm:text-base"
+              >
                 Start For Free
               </button>
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow,
   addEdge,
@@ -15,6 +15,7 @@ import type {
   EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 // Components
 import {
@@ -42,6 +43,8 @@ import { generateSQL, copyToClipboard } from "../utils/sqlGenerator";
 import { parseSQLSchema } from "../utils/sqlParser";
 import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
 import { useErrorHandler } from "../utils/errorHandler";
+import { authClient } from "../lib/authClient";
+import { createProject, getProjectById, updateProject } from "../lib/projectsApi";
 
 // Node types configuration
 const nodeTypes: NodeTypes = {
@@ -57,6 +60,10 @@ const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
 export default function CanvasPlayground() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectId = searchParams.get("projectId") || "";
+
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Error handling
@@ -69,6 +76,7 @@ export default function CanvasPlayground() {
   const [sqlText, setSqlText] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [lastOperation, setLastOperation] = useState<(() => void) | null>(null);
+  const [projectName, setProjectName] = useState("");
 
   // Table management hook
   const {
@@ -119,6 +127,36 @@ export default function CanvasPlayground() {
     getAvailableTables,
     importNodes,
   } = useTableManagement(initialNodes, setEdges);
+
+  useEffect(() => {
+    const loadSessionAndProject = async () => {
+      try {
+        const session = await authClient.getSession();
+        if (!session.data?.user) {
+          navigate("/auth?mode=signin");
+          return;
+        }
+
+        if (!projectId) {
+          return;
+        }
+
+        setLoadingDialogOpen(true);
+        const response = await getProjectById(projectId);
+        setProjectName(response.project.name);
+
+        const { nodes: parsedNodes, edges: parsedEdges } = parseSQLSchema(response.project.sql);
+        importNodes(parsedNodes);
+        setEdges(parsedEdges);
+      } catch (error) {
+        showError(error, "import");
+      } finally {
+        setLoadingDialogOpen(false);
+      }
+    };
+
+    loadSessionAndProject();
+  }, [projectId, importNodes, navigate, setEdges, showError]);
 
   // Import schema functionality
   const importSchema = useCallback((sqlText: string) => {
@@ -284,6 +322,34 @@ export default function CanvasPlayground() {
     }
   }, [addTable, showError]);
 
+  const handleSaveProject = useCallback(async () => {
+    try {
+      if (!nodes.length) {
+        throw new Error("Please add at least one table before saving.");
+      }
+
+      const sql = generateSQL(nodes);
+
+      if (projectId) {
+        await updateProject(projectId, { sql });
+        window.alert("Project saved.");
+        return;
+      }
+
+      const name = window.prompt("Project name", projectName || "Untitled Project");
+      if (!name || !name.trim()) {
+        return;
+      }
+
+      const response = await createProject(name.trim(), sql);
+      setProjectName(response.project.name);
+      setSearchParams({ projectId: response.project.id });
+      window.alert("Project created.");
+    } catch (error) {
+      showError(error, "export");
+    }
+  }, [nodes, projectId, projectName, setSearchParams, showError]);
+
   // Error handling
   const handleRetryOperation = useCallback(() => {
     if (lastOperation) {
@@ -352,6 +418,8 @@ export default function CanvasPlayground() {
           onImportSchema={handleImportSchema}
           onExportPNG={handleExportPNG}
           onExportPDF={handleExportPDF}
+          onSaveProject={handleSaveProject}
+          onGoToProjects={() => navigate("/dashboard")}
         />
 
         {/* Loading Dialog */}
