@@ -13,6 +13,7 @@ interface ToolbarProps {
   onGoToProjects: () => void;
 }
 
+
 export const Toolbar: React.FC<ToolbarProps> = ({ 
   projectTitle,
   onAddTable, 
