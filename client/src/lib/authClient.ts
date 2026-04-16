@@ -4,6 +4,9 @@ const apiBaseUrl = import.meta.env.VITE_API_URL;
 
 export const authClient = createAuthClient({
   baseURL: `${apiBaseUrl}/api/auth`,
+  fetchOptions: {
+    credentials: "include",
+  },
 });
 
 export const appApiBaseUrl = apiBaseUrl;
