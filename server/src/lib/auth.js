@@ -7,11 +7,18 @@ import { getRequiredEnv } from "./env.js";
 const betterAuthUrl = process.env.BETTER_AUTH_URL;
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const betterAuthSecret = getRequiredEnv("BETTER_AUTH_SECRET");
+const isProduction = process.env.NODE_ENV === "production";
 
 export const auth = betterAuth({
   secret: betterAuthSecret,
   baseURL: betterAuthUrl,
   trustedOrigins: [clientOrigin, betterAuthUrl],
+  advanced: {
+    useSecureCookies: true,
+    defaultCookieAttributes: {
+      sameSite: isProduction ? "none" : "lax",
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
