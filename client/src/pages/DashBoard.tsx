@@ -52,7 +52,7 @@ const DashBoard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#141413] sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#1F1F1E] sm:px-6 lg:px-8 lg:py-8">
       <div className="mx-auto max-w-[1200px]">
         <div className="rounded-[2rem] border border-[#e8e6dc] bg-[#faf9f5] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
           <div className="flex flex-col gap-6 border-b border-[#e8e6dc] pb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -60,7 +60,7 @@ const DashBoard = () => {
               <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">
                 Your library
               </p>
-              <h1 className="mt-3 font-sans-claude text-4xl leading-none text-[#141413] sm:text-5xl">
+              <h1 className="mt-3 font-sans-claude text-4xl leading-none text-[#1F1F1E] sm:text-5xl">
                 Saved diagrams, held together by SQL.
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-[#5e5d59] sm:text-lg">
@@ -95,7 +95,7 @@ const DashBoard = () => {
 
           {!loading && projects.length === 0 && (
             <div className="mt-6 rounded-[1.75rem] border border-dashed border-[#e8e6dc] bg-[#f5f4ed] p-8 text-center">
-              <p className="font-sans-claude text-3xl text-[#141413]">Nothing here yet</p>
+              <p className="font-sans-claude text-3xl text-[#1F1F1E]">Nothing here yet</p>
               <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-[#5e5d59]">
                 Create your first schema project and it will appear here as a quiet, private entry in your library.
               </p>
@@ -117,7 +117,7 @@ const DashBoard = () => {
                       <span className="h-2 w-2 rounded-full bg-[#c96442]" />
                       Project {index + 1}
                     </div>
-                    <h2 className="font-sans-claude text-3xl leading-tight text-[#141413]">{project.name}</h2>
+                    <h2 className="font-sans-claude text-3xl leading-tight text-[#1F1F1E]">{project.name}</h2>
                     <p className="mt-2 text-sm text-[#87867f]">
                       Updated {new Date(project.updatedAt).toLocaleString()}
                     </p>
@@ -135,7 +135,7 @@ const DashBoard = () => {
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     onClick={() => navigate(`/playground?projectId=${project.id}`)}
-                    className="rounded-full bg-[#141413] px-4 py-2.5 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
+                    className="rounded-full bg-[#1F1F1E] px-4 py-2.5 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
                   >
                     Open
                   </button>

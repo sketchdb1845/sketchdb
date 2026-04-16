@@ -14,49 +14,25 @@ export const LoadingDialog: React.FC<LoadingDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="
-        absolute top-1/2 left-1/2 -translate-x-1/2
-        -translate-y-1/2
-        z-[100] bg-white border-2 border-[#0074D9]
-        rounded-lg shadow-lg p-8 min-w-[500px]
-        text-center
-      "
-    >
-      {/* Loading Spinner */}
-      <div
-        className="
-          w-10 h-10 border-4 border-gray-200 
-          border-t-[#0074D9] rounded-full 
-          animate-spin mx-auto mb-5
-        "
-      ></div>
-
-      {/* Loading Message */}
-      <h3 className="text-[#0074D9] mt-0 mb-2 text-lg font-bold">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#1F1F1E]/50 px-4 backdrop-blur-sm">
+      <div className="min-w-[420px] rounded-[2rem] border border-[#e8e6dc] bg-[#faf9f5] p-8 text-center shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+        <div className="mx-auto mb-5 h-11 w-11 animate-spin rounded-full border-4 border-[#e8e6dc] border-t-[#c96442]" />
+        <h3 className="font-serif-claude text-3xl text-[#1F1F1E]">
         {message}
-      </h3>
+        </h3>
+        <p className={`mt-3 text-sm text-[#5e5d59] ${onCancel ? "mb-6" : "mb-0"}`}>
+          Please wait while we process your request.
+        </p>
 
-      <p
-        className={`
-          text-gray-600 text-sm mb-${onCancel ? "5" : "0"}
-        `}
-      >
-        Please wait while we generate your SQL schema...
-      </p>
-
-      {/* Cancel Button */}
-      {onCancel && (
-        <button
-          onClick={onCancel}
-          className="cursor-pointer
-            bg-gray-400 text-white px-4 py-2 
-            rounded-md text-sm hover:bg-gray-500
-          "
-        >
-          Cancel
-        </button>
-      )}
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 };

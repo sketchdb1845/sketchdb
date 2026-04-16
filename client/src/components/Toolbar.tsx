@@ -20,46 +20,46 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onGoToProjects,
 }) => {
   return (
-    <div className="absolute top-4 left-4 flex space-x-4 z-10">
+    <div className="absolute left-4 top-4 z-20 flex max-w-[calc(100vw-2rem)] flex-wrap gap-3 rounded-full border border-[#e8e6dc] bg-[#faf9f5]/95 p-3 shadow-[0_16px_50px_rgba(0,0,0,0.08)] backdrop-blur">
       <button
         onClick={onAddTable}
-        className="cursor-pointer w-[200px] h-[75px] bg-yellow-400 hover:bg-yellow-500 rounded-md font-bold"
+        className="cursor-pointer rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
       >
         Add Table
       </button>
       <button
         onClick={onImportSchema}
-        className="cursor-pointer w-[200px] h-[75px] bg-green-500 hover:bg-green-600 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
       >
         Import Schema
       </button>
       <button
         onClick={onExportSQL}
-        className="cursor-pointer w-[200px] h-[75px] bg-[#0074D9] hover:bg-blue-600 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
       >
         Export to SQL
       </button>
       <button
         onClick={onExportPNG}
-        className="cursor-pointer w-[200px] h-[75px] bg-purple-500 hover:bg-purple-600 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
       >
         Export as PNG
       </button>
       <button
         onClick={onExportPDF}
-        className="cursor-pointer w-[200px] h-[75px] bg-red-500 hover:bg-red-600 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
       >
         Export as PDF
       </button>
       <button
         onClick={onSaveProject}
-        className="cursor-pointer w-[200px] h-[75px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full bg-[#1F1F1E] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
       >
         Save Project
       </button>
       <button
         onClick={onGoToProjects}
-        className="cursor-pointer w-[200px] h-[75px] bg-slate-700 hover:bg-slate-800 text-white rounded-md font-bold"
+        className="cursor-pointer rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
       >
         My Projects
       </button>

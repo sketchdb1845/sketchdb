@@ -136,7 +136,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#141413] sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#1F1F1E] sm:px-6 lg:px-8 lg:py-8">
       <div className="mx-auto mt-60 w-1/3 h-1/2  rounded-4xl border border-[#C66341]">
         <main className="flex items-center">
           <form onSubmit={onSubmit} className="w-full rounded-[2rem] border border-[#f0eee6] bg-[#faf9f5] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.07)] sm:p-8 lg:p-10">
@@ -145,7 +145,7 @@ export default function Auth() {
                 <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">
                   Account
                 </p>
-                <h2 className="mt-2 font-sans-claude text-4xl leading-none text-[#141413]">
+                <h2 className="mt-2 font-sans-claude text-4xl leading-none text-[#1F1F1E]">
                   {heading}
                 </h2>
               </div>
@@ -161,7 +161,7 @@ export default function Auth() {
             <div className="mt-6 space-y-4">
               {mode === "signup" && (
                 <input
-                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#141413] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
+                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#1F1F1E] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
                   placeholder="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -171,7 +171,7 @@ export default function Auth() {
 
               {(mode === "signin" || mode === "signup" || mode === "forgot") && (
                 <input
-                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#141413] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
+                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#1F1F1E] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
                   placeholder="Email"
                   type="email"
                   value={email}
@@ -182,7 +182,7 @@ export default function Auth() {
 
               {(mode === "signin" || mode === "signup" || mode === "reset") && (
                 <input
-                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#141413] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
+                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#1F1F1E] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
                   placeholder="Password"
                   type="password"
                   value={password}
@@ -193,7 +193,7 @@ export default function Auth() {
 
               {(mode === "signup" || mode === "reset") && (
                 <input
-                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#141413] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
+                  className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-4 py-3 text-[#1F1F1E] outline-none transition placeholder:text-[#87867f] focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
                   placeholder="Confirm password"
                   type="password"
                   value={confirmPassword}

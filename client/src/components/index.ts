@@ -7,4 +7,5 @@ export { Toolbar } from './Toolbar';
 export { LoadingDialog } from './LoadingDialog';
 export { ExportDialog } from './ExportDialog';
 export { ErrorDialog } from './ErrorDialog';
+export { ProjectNameDialog, NoticeDialog } from './ProjectDialogs';
 export { default as CustomEdge } from './CustomEdge';

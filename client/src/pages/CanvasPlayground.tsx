@@ -5,6 +5,7 @@ import {
   MiniMap,
   Controls,
   Background,
+  BackgroundVariant,
   useEdgesState,
 } from "@xyflow/react";
 import type {
@@ -27,6 +28,8 @@ import {
   Toolbar,
   LoadingDialog,
   ErrorDialog,
+  ProjectNameDialog,
+  NoticeDialog,
   CustomEdge,
 } from "../components";
 
@@ -77,6 +80,9 @@ export default function CanvasPlayground() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [lastOperation, setLastOperation] = useState<(() => void) | null>(null);
   const [projectName, setProjectName] = useState("");
+  const [projectNameDialogOpen, setProjectNameDialogOpen] = useState(false);
+  const [pendingProjectSql, setPendingProjectSql] = useState("");
+  const [projectNotice, setProjectNotice] = useState<{ title: string; message: string } | null>(null);
 
   // Table management hook
   const {
@@ -332,23 +338,42 @@ export default function CanvasPlayground() {
 
       if (projectId) {
         await updateProject(projectId, { sql });
-        window.alert("Project saved.");
+        setProjectNotice({
+          title: "Project saved",
+          message: "Your SQL schema has been updated and is now stored in your library.",
+        });
         return;
       }
 
-      const name = window.prompt("Project name", projectName || "Untitled Project");
-      if (!name || !name.trim()) {
-        return;
-      }
-
-      const response = await createProject(name.trim(), sql);
-      setProjectName(response.project.name);
-      setSearchParams({ projectId: response.project.id });
-      window.alert("Project created.");
+      setPendingProjectSql(sql);
+      setProjectNameDialogOpen(true);
     } catch (error) {
       showError(error, "export");
     }
   }, [nodes, projectId, projectName, setSearchParams, showError]);
+
+  const handleCreateProject = useCallback(
+    async (name: string) => {
+      try {
+        if (!name.trim()) {
+          throw new Error("Project name is required.");
+        }
+
+        const response = await createProject(name.trim(), pendingProjectSql);
+        setProjectName(response.project.name);
+        setSearchParams({ projectId: response.project.id });
+        setProjectNotice({
+          title: "Project created",
+          message: "A new project has been added to your account and is ready in the dashboard.",
+        });
+        setProjectNameDialogOpen(false);
+        setPendingProjectSql("");
+      } catch (error) {
+        showError(error, "export");
+      }
+    },
+    [pendingProjectSql, setSearchParams, showError]
+  );
 
   // Error handling
   const handleRetryOperation = useCallback(() => {
@@ -372,7 +397,7 @@ export default function CanvasPlayground() {
   }, [deleteTable, showError]);
 
   return (
-    <div className="w-screen h-screen flex">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f5f4ed] text-[#1F1F1E]">
       {/* Sidebar */}
       <Sidebar
         selectedTable={selectedTable}
@@ -410,7 +435,18 @@ export default function CanvasPlayground() {
       />
 
       {/* Main Canvas Area */}
-      <div className="flex-1 relative">
+      <div className="relative flex-1 overflow-hidden bg-[#1F1F1E]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,100,66,0.1),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
+        <div className="pointer-events-none absolute right-4 top-4 z-10 hidden max-w-md rounded-[1.5rem] border border-[#30302e] bg-[#30302e]/80 px-5 py-4 text-[#faf9f5] shadow-[0_16px_50px_rgba(0,0,0,0.28)] backdrop-blur lg:block">
+          <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#b0aea5]">Canvas</p>
+          <p className="mt-2 font-serif-claude text-3xl leading-none text-[#faf9f5]">
+            {projectId ? projectName || "Saved project" : "New project draft"}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[#b0aea5]">
+            Build the schema, assign a table color once, and store the SQL when you’re ready.
+          </p>
+        </div>
+
         {/* Toolbar */}
         <Toolbar
           onAddTable={handleAddTable}
@@ -464,6 +500,23 @@ export default function CanvasPlayground() {
           onRetry={error?.retryable ? handleRetryOperation : undefined}
         />
 
+        <ProjectNameDialog
+          isOpen={projectNameDialogOpen}
+          initialValue={projectName || "Untitled Project"}
+          onClose={() => {
+            setProjectNameDialogOpen(false);
+            setPendingProjectSql("");
+          }}
+          onSubmit={handleCreateProject}
+        />
+
+        <NoticeDialog
+          isOpen={projectNotice !== null}
+          title={projectNotice?.title || "Saved"}
+          message={projectNotice?.message || "Your project has been updated."}
+          onClose={() => setProjectNotice(null)}
+        />
+
         {/* React Flow */}
         <ReactFlow
           nodes={nodes}
@@ -476,18 +529,18 @@ export default function CanvasPlayground() {
           onNodeClick={onNodeClick}
           isValidConnection={isValidConnection}
           fitView
-          connectionLineStyle={{ stroke: "#0074D9", strokeWidth: 3 }}
+          connectionLineStyle={{ stroke: "#c96442", strokeWidth: 3 }}
           defaultEdgeOptions={{
             type: "customEdge",
-            style: { stroke: "#0074D9", strokeWidth: 2 },
-            markerEnd: { type: "arrowclosed", color: "#0074D9" },
-            labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8 },
-            labelStyle: { fill: "#0074D9", fontWeight: "bold" },
+            style: { stroke: "#c96442", strokeWidth: 2 },
+            markerEnd: { type: "arrowclosed", color: "#c96442" },
+            labelBgStyle: { fill: "#1F1F1E", fillOpacity: 0.92 },
+            labelStyle: { fill: "#faf9f5", fontWeight: "bold" },
           }}
         >
           <MiniMap />
           <Controls />
-          <Background />
+          <Background variant={BackgroundVariant.Dots} gap={22} size={4.2} color="rgba(255,255,255,0.12)" />
         </ReactFlow>
       </div>
     </div>

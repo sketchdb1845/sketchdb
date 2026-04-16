@@ -3,7 +3,7 @@
 
 :root {
 	font-family: "DM Sans", Arial, sans-sans;
-	color: #141413;
+	color: #1F1F1E;
 	background-color: #f5f4ed;
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
@@ -22,7 +22,7 @@ body {
 		radial-gradient(circle at top left, rgba(201, 100, 66, 0.12), transparent 34%),
 		radial-gradient(circle at bottom right, rgba(216, 173, 122, 0.18), transparent 28%),
 		#f5f4ed;
-	color: #141413;
+	color: #1F1F1E;
 }
 
 #root {
@@ -31,7 +31,7 @@ body {
 
 ::selection {
 	background: rgba(201, 100, 66, 0.18);
-	color: #141413;
+	color: #1F1F1E;
 }
 
 .font-sans-claude {
