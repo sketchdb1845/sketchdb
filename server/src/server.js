@@ -51,6 +51,85 @@ function getSessionCookieOptions() {
   };
 }
 
+function extractAuthUserFromBody(body) {
+  return (
+    body?.data?.user ||
+    body?.user ||
+    body?.data?.session?.user ||
+    body?.session?.user ||
+    null
+  );
+}
+
+function setJwtCookieForAuthUser(res, body) {
+  const user = extractAuthUserFromBody(body);
+  if (!user?.id || !user?.email) {
+    return;
+  }
+
+  const token = signSessionToken(user);
+  res.cookie(authCookieName, token, getSessionCookieOptions());
+}
+
+function attachAuthCookieBridge(req, res) {
+  const isEmailSignIn = req.method === "POST" && req.path === "/sign-in/email";
+  const isEmailSignUp = req.method === "POST" && req.path === "/sign-up/email";
+
+  if (!isEmailSignIn && !isEmailSignUp) {
+    return;
+  }
+
+  const originalJson = res.json.bind(res);
+  const originalSend = res.send.bind(res);
+  const originalWrite = res.write.bind(res);
+  const originalEnd = res.end.bind(res);
+
+  const chunks = [];
+
+  res.json = (body) => {
+    setJwtCookieForAuthUser(res, body);
+    return originalJson(body);
+  };
+
+  res.send = (body) => {
+    if (typeof body === "string") {
+      try {
+        setJwtCookieForAuthUser(res, JSON.parse(body));
+      } catch {
+        // Ignore non-JSON payloads.
+      }
+    } else if (body && typeof body === "object") {
+      setJwtCookieForAuthUser(res, body);
+    }
+
+    return originalSend(body);
+  };
+
+  res.write = (chunk, encoding, callback) => {
+    if (chunk) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, typeof encoding === "string" ? encoding : undefined));
+    }
+    return originalWrite(chunk, encoding, callback);
+  };
+
+  res.end = (chunk, encoding, callback) => {
+    if (chunk) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, typeof encoding === "string" ? encoding : undefined));
+    }
+
+    if (chunks.length > 0) {
+      try {
+        const raw = Buffer.concat(chunks).toString("utf8");
+        setJwtCookieForAuthUser(res, JSON.parse(raw));
+      } catch {
+        // Ignore non-JSON payloads.
+      }
+    }
+
+    return originalEnd(chunk, encoding, callback);
+  };
+}
+
 app.use(
   cors({
     origin: clientOrigins,
@@ -114,27 +193,7 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 app.use("/api/auth", async (req, res, next) => {
-  if (req.method === "POST" && req.path === "/sign-in/email") {
-    const originalJson = res.json.bind(res);
-    res.json = (body) => {
-      if (body?.data?.user) {
-        const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, getSessionCookieOptions());
-      }
-      return originalJson(body);
-    };
-  }
-
-  if (req.method === "POST" && req.path === "/sign-up/email") {
-    const originalJson = res.json.bind(res);
-    res.json = (body) => {
-      if (body?.data?.user) {
-        const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, getSessionCookieOptions());
-      }
-      return originalJson(body);
-    };
-  }
+  attachAuthCookieBridge(req, res);
 
   if (req.method === "POST" && req.path === "/sign-out") {
     res.clearCookie(authCookieName, { path: "/" });
