@@ -59,7 +59,10 @@ export default function Auth() {
       throw new Error(result.error.message);
     }
 
-    await getAppSession({ bootstrap: true });
+    const session = await getAppSession({ bootstrap: true });
+    if (!session.user) {
+      throw new Error("Account created, but session could not be established. Please sign in again.");
+    }
     navigate("/dashboard");
   };
 
@@ -70,7 +73,10 @@ export default function Auth() {
       throw new Error(result.error.message);
     }
 
-    await getAppSession({ bootstrap: true });
+    const session = await getAppSession({ bootstrap: true });
+    if (!session.user) {
+      throw new Error("Sign-in succeeded, but session could not be established. Please try again.");
+    }
     navigate("/dashboard");
   };
 
