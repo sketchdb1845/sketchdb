@@ -114,11 +114,6 @@ export const createEdgesFromForeignKeys = (nodes: Node[]): Edge[] => {
             labelStyle: { fill: targetColor, fontWeight: 'bold', fontSize: 10 },
           };
           
-          console.log('Creating edge:', {
-            from: `${referencedNode.id}.${attr.refAttr} (PK)`,
-            to: `${node.id}.${attr.name} (FK)`,
-            edge
-          });
           
           edges.push(edge);
         }

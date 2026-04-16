@@ -85,7 +85,7 @@ const DashBoard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f4ed] px-4 py-3  text-[#1F1F1E] sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-screen max-h-screen overflow-x-hidden bg-[#f5f4ed] px-4 py-3  text-[#1F1F1E] sm:px-6 lg:px-8 lg:py-8">
       <div className="mx-auto max-w-[1200px]">
         <div className="rounded-[2rem] border border-[#e8e6dc] bg-[#faf9f5] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
           <div className="flex flex-col gap-6 border-b border-[#e8e6dc] pb-6 lg:flex-row lg:items-end lg:justify-between">
