@@ -137,7 +137,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#1F1F1E] sm:px-6 lg:px-8 lg:py-8">
-      <div className="mx-auto mt-60 w-1/3 h-1/2  rounded-4xl border border-[#C66341]">
+      <div className="mx-auto mt-30 w-1/3 h-1/2  rounded-4xl border border-[#C66341]">
         <main className="flex items-center">
           <form onSubmit={onSubmit} className="w-full rounded-[2rem] border border-[#f0eee6] bg-[#faf9f5] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.07)] sm:p-8 lg:p-10">
             <div className="flex items-start justify-between gap-4 border-b border-[#e8e6dc] pb-5">

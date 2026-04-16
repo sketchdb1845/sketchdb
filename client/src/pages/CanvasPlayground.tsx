@@ -435,20 +435,11 @@ export default function CanvasPlayground() {
       />
 
       {/* Main Canvas Area */}
-      <div className="relative flex-1 overflow-hidden bg-[#1F1F1E]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,100,66,0.1),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
-        <div className="pointer-events-none absolute right-4 top-4 z-10 hidden max-w-md rounded-[1.5rem] border border-[#30302e] bg-[#30302e]/80 px-5 py-4 text-[#faf9f5] shadow-[0_16px_50px_rgba(0,0,0,0.28)] backdrop-blur lg:block">
-          <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#b0aea5]">Canvas</p>
-          <p className="mt-2 font-serif-claude text-3xl leading-none text-[#faf9f5]">
-            {projectId ? projectName || "Saved project" : "New project draft"}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-[#b0aea5]">
-            Build the schema, assign a table color once, and store the SQL when you’re ready.
-          </p>
-        </div>
-
-        {/* Toolbar */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#1F1F1E]">
         <Toolbar
+          projectTitle={projectId ? projectName || "Saved project" : projectName || "New project draft"}
+          projectStatus={projectId ? "Loaded from library" : "Unsaved draft"}
+          projectDescription="Build the schema, assign a table color once, and store the SQL when you're ready."
           onAddTable={handleAddTable}
           onExportSQL={exportToSQL}
           onImportSchema={handleImportSchema}
@@ -458,90 +449,94 @@ export default function CanvasPlayground() {
           onGoToProjects={() => navigate("/dashboard")}
         />
 
-        {/* Loading Dialog */}
-        <LoadingDialog
-          isOpen={loadingDialogOpen}
-          message="Parsing to SQL..."
-          onCancel={handleCancelLoading}
-        />
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,100,66,0.1),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
 
-        {/* Import Dialog */}
-        <ImportDialog
-          isOpen={importDialogOpen}
-          onClose={handleImportClose}
-          onImport={importSchema}
-          onError={handleImportError}
-        />
+          {/* Loading Dialog */}
+          <LoadingDialog
+            isOpen={loadingDialogOpen}
+            message="Parsing to SQL..."
+            onCancel={handleCancelLoading}
+          />
 
-        {/* SQL Dialog */}
-        <SQLDialog
-          isOpen={sqlDialogOpen}
-          sqlText={sqlText}
-          onClose={() => setSqlDialogOpen(false)}
-          onCopy={handleCopySQL}
-        />
+          {/* Import Dialog */}
+          <ImportDialog
+            isOpen={importDialogOpen}
+            onClose={handleImportClose}
+            onImport={importSchema}
+            onError={handleImportError}
+          />
 
-        {/* Delete Confirmation Dialog */}
-        <DeleteConfirmDialog
-          isOpen={deleteConfirmOpen}
-          selectedTable={selectedTable}
-          selectedTableId={selectedTableId}
-          onConfirm={handleDeleteTable}
-          onCancel={() => setDeleteConfirmOpen(false)}
-        />
+          {/* SQL Dialog */}
+          <SQLDialog
+            isOpen={sqlDialogOpen}
+            sqlText={sqlText}
+            onClose={() => setSqlDialogOpen(false)}
+            onCopy={handleCopySQL}
+          />
 
-        {/* Error Dialog */}
-        <ErrorDialog
-          isOpen={hasError}
-          title={error?.title || 'Error'}
-          message={error?.message || 'An unexpected error occurred'}
-          details={error?.details}
-          onClose={clearError}
-          onRetry={error?.retryable ? handleRetryOperation : undefined}
-        />
+          {/* Delete Confirmation Dialog */}
+          <DeleteConfirmDialog
+            isOpen={deleteConfirmOpen}
+            selectedTable={selectedTable}
+            selectedTableId={selectedTableId}
+            onConfirm={handleDeleteTable}
+            onCancel={() => setDeleteConfirmOpen(false)}
+          />
 
-        <ProjectNameDialog
-          isOpen={projectNameDialogOpen}
-          initialValue={projectName || "Untitled Project"}
-          onClose={() => {
-            setProjectNameDialogOpen(false);
-            setPendingProjectSql("");
-          }}
-          onSubmit={handleCreateProject}
-        />
+          {/* Error Dialog */}
+          <ErrorDialog
+            isOpen={hasError}
+            title={error?.title || 'Error'}
+            message={error?.message || 'An unexpected error occurred'}
+            details={error?.details}
+            onClose={clearError}
+            onRetry={error?.retryable ? handleRetryOperation : undefined}
+          />
 
-        <NoticeDialog
-          isOpen={projectNotice !== null}
-          title={projectNotice?.title || "Saved"}
-          message={projectNotice?.message || "Your project has been updated."}
-          onClose={() => setProjectNotice(null)}
-        />
+          <ProjectNameDialog
+            isOpen={projectNameDialogOpen}
+            initialValue={projectName || "Untitled Project"}
+            onClose={() => {
+              setProjectNameDialogOpen(false);
+              setPendingProjectSql("");
+            }}
+            onSubmit={handleCreateProject}
+          />
 
-        {/* React Flow */}
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          isValidConnection={isValidConnection}
-          fitView
-          connectionLineStyle={{ stroke: "#c96442", strokeWidth: 3 }}
-          defaultEdgeOptions={{
-            type: "customEdge",
-            style: { stroke: "#c96442", strokeWidth: 2 },
-            markerEnd: { type: "arrowclosed", color: "#c96442" },
-            labelBgStyle: { fill: "#1F1F1E", fillOpacity: 0.92 },
-            labelStyle: { fill: "#faf9f5", fontWeight: "bold" },
-          }}
-        >
-          <MiniMap />
-          <Controls />
-          <Background variant={BackgroundVariant.Dots} gap={22} size={4.2} color="rgba(255,255,255,0.12)" />
-        </ReactFlow>
+          <NoticeDialog
+            isOpen={projectNotice !== null}
+            title={projectNotice?.title || "Saved"}
+            message={projectNotice?.message || "Your project has been updated."}
+            onClose={() => setProjectNotice(null)}
+          />
+
+          {/* React Flow */}
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            isValidConnection={isValidConnection}
+            fitView
+            connectionLineStyle={{ stroke: "#c96442", strokeWidth: 3 }}
+            defaultEdgeOptions={{
+              type: "customEdge",
+              style: { stroke: "#c96442", strokeWidth: 2 },
+              markerEnd: { type: "arrowclosed", color: "#c96442" },
+              labelBgStyle: { fill: "#1F1F1E", fillOpacity: 0.92 },
+              labelStyle: { fill: "#faf9f5", fontWeight: "bold" },
+            }}
+          >
+            <MiniMap />
+            <Controls />
+            <Background variant={BackgroundVariant.Dots} gap={22} size={4.2} color="rgba(255,255,255,0.12)" />
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );

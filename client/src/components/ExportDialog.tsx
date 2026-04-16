@@ -141,13 +141,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Export Options</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1F1F1E]/55 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-[2rem] border border-[#e8e6dc] bg-[#faf9f5] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:p-8">
+        <div className="mb-5 border-b border-[#e8e6dc] pb-4">
+          <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">Export</p>
+          <h2 className="mt-2 font-serif-claude text-4xl leading-none text-[#1F1F1E]">Export Options</h2>
+        </div>
         
         {/* Global Error Display */}
         {exportError && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 rounded-2xl border border-[#efc4c4] bg-[#fdf4f4] p-3 text-[#b53333]">
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -160,12 +163,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         
         {/* Format Selection */}
         <div className="mb-4">
-          <label htmlFor="format-select" className="block text-sm font-medium mb-2">Format</label>
+          <label htmlFor="format-select" className="mb-2 block text-sm font-medium text-[#1F1F1E]">Format</label>
           <select 
             id="format-select"
             value={format} 
             onChange={(e) => handleFormatChange(e.target.value as 'png' | 'pdf')}
-            className="w-full p-2 border rounded"
+            className="w-full rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-[#1F1F1E] outline-none focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15"
             disabled={isExporting}
           >
             <option value="png">PNG Image</option>
@@ -175,12 +178,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
         {/* Quality */}
         <div className="mb-4">
-          <label htmlFor="quality-select" className="block text-sm font-medium mb-2">Quality</label>
+          <label htmlFor="quality-select" className="mb-2 block text-sm font-medium text-[#1F1F1E]">Quality</label>
           <select 
             id="quality-select"
             value={options.quality} 
             onChange={(e) => handleOptionsChange({quality: Number(e.target.value)})}
-            className={`w-full p-2 border rounded ${hasFieldError('quality') ? 'border-red-500' : ''}`}
+            className={`w-full rounded-2xl border bg-white px-3 py-2.5 text-[#1F1F1E] outline-none focus:border-[#3898ec] focus:ring-4 focus:ring-[#3898ec]/15 ${hasFieldError('quality') ? 'border-[#b53333]' : 'border-[#e8e6dc]'}`}
             disabled={isExporting}
           >
             <option value={1}>Standard (1x)</option>
@@ -194,13 +197,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
         {/* Background Color */}
         <div className="mb-4">
-          <label htmlFor="background-color" className="block text-sm font-medium mb-2">Background Color</label>
+          <label htmlFor="background-color" className="mb-2 block text-sm font-medium text-[#1F1F1E]">Background Color</label>
           <input
             id="background-color"
             type="color"
             value={options.backgroundColor}
             onChange={(e) => handleOptionsChange({backgroundColor: e.target.value})}
-            className={`w-full h-10 border rounded ${hasFieldError('backgroundColor') ? 'border-red-500' : ''}`}
+            className={`h-11 w-full rounded-2xl border bg-white ${hasFieldError('backgroundColor') ? 'border-[#b53333]' : 'border-[#e8e6dc]'}`}
             disabled={isExporting}
           />
           {getFieldError('backgroundColor') && (
@@ -279,14 +282,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           </div>
         )}
 
-        <div className="flex space-x-2">
+        <div className="flex gap-3">
           <button
             onClick={handleExport}
             disabled={isExporting || validationErrors.length > 0}
-            className={`flex-1 px-4 py-2 rounded transition-colors ${
+            className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
               isExporting || validationErrors.length > 0
-                ? 'bg-gray-400 cursor-not-allowed text-gray-600'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                ? 'cursor-not-allowed bg-gray-400 text-gray-600'
+                : 'bg-[#c96442] text-white hover:bg-[#b95d3c]'
             }`}
           >
             {isExporting ? (
@@ -304,10 +307,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           <button
             onClick={handleClose}
             disabled={isExporting}
-            className={`flex-1 px-4 py-2 rounded transition-colors ${
+            className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
               isExporting
-                ? 'bg-gray-400 cursor-not-allowed text-gray-600'
-                : 'bg-gray-500 hover:bg-gray-600 text-white'
+                ? 'cursor-not-allowed bg-gray-400 text-gray-600'
+                : 'border border-[#e8e6dc] bg-white text-[#4d4c48] hover:bg-[#f5f4ed]'
             }`}
           >
             Cancel

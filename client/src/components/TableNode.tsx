@@ -25,13 +25,13 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
   return (
     <div 
       ref={tableRef}
-      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-[#23233d] overflow-hidden border-[var(--table-color)]"
+      className="min-w-[220px] overflow-hidden rounded-[1.5rem] border border-[var(--table-color)] bg-[#23233d] shadow-[0_18px_40px_rgba(0,0,0,0.22)]"
     >
-      <div className="h-1 w-full bg-[var(--table-color)]" />
+      <div className="h-1.5 w-full bg-[var(--table-color)]" />
 
       {/* Table Header */}
       <div 
-        className="px-3 py-3 font-bold text-center bg-[var(--table-color)] text-[var(--table-text-color)]"
+        className="px-4 py-4 text-center font-serif-claude text-lg font-semibold tracking-wide bg-[var(--table-color)] text-[var(--table-text-color)]"
       >
         {typeof data.label === "string" ? data.label : `Table ${id}`}
       </div>
@@ -42,8 +42,8 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
           attributes.map((attr, idx) => (
             <div
               key={idx}
-              className={`px-3 py-1 text-xs flex justify-between items-center relative min-h-[24px] text-gray-100 ${
-                idx < attributes.length - 1 ? "border-b border-gray-200" : ""
+              className={`relative flex min-h-[28px] items-center justify-between px-4 py-2 text-xs text-[#faf9f5] ${
+                idx < attributes.length - 1 ? "border-b border-white/10" : ""
               } ${idx % 2 === 0 ? "bg-white/5" : ""}`}
             >
               {/* Left handle (incoming connections) */}
@@ -52,15 +52,15 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 position={Position.Left}
                 id={`${id}-${attr.name}-target`}
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 10,
+                  height: 10,
                   backgroundColor: attr.type === "FK" ? "#FF6B6B" : tableColor,
                   position: 'absolute',
-                  left: -4,
+                  left: -5,
                   top: '50%',
                   transform: 'translateY(-50%)',
                   borderRadius: '50%',
-                  border: '1px solid white'
+                  border: '2px solid #23233d'
                 }}
               />
 
@@ -70,35 +70,35 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 position={Position.Right}
                 id={`${id}-${attr.name}-source`}
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 10,
+                  height: 10,
                   backgroundColor: attr.type === "PK" ? "#FFD700" : tableColor,
                   position: 'absolute',
-                  right: -4,
+                  right: -5,
                   top: '50%',
                   transform: 'translateY(-50%)',
                   borderRadius: '50%',
-                  border: '1px solid white'
+                  border: '2px solid #23233d'
                 }}
               />
 
-              <span className={attr.type === "PK" ? "font-bold" : ""}>
+              <span className={`pr-3 ${attr.type === "PK" ? "font-semibold" : ""}`}>
                 {attr.name}
                 {attr.type === "PK" && (
-                  <span className="text-[#FFD700] ml-1">🔑</span>
+                  <span className="ml-1 text-[#FFD700]">🔑</span>
                 )}
                 {attr.type === "FK" && (
-                  <span className="text-[#FF6B6B] ml-1">🔗</span>
+                  <span className="ml-1 text-[#FF6B6B]">🔗</span>
                 )}
               </span>
 
-              <span className="text-gray-500 text-[10px]">
+              <span className="text-[10px] text-[#b7b7c7]">
                 {attr.dataType || "VARCHAR(255)"}
               </span>
             </div>
           ))
         ) : (
-          <div className="px-3 py-2 text-xs text-gray-400 italic">
+          <div className="px-4 py-3 text-xs italic text-[#b7b7c7]">
             No attributes
           </div>
         )}
