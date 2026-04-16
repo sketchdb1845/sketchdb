@@ -1,1 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;700&display=swap");
 @import "tailwindcss";
+
+:root {
+	font-family: "DM Sans", Arial, sans-sans;
+	color: #141413;
+	background-color: #f5f4ed;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+html {
+	background: #f5f4ed;
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	background:
+		radial-gradient(circle at top left, rgba(201, 100, 66, 0.12), transparent 34%),
+		radial-gradient(circle at bottom right, rgba(216, 173, 122, 0.18), transparent 28%),
+		#f5f4ed;
+	color: #141413;
+}
+
+#root {
+	min-height: 100vh;
+}
+
+::selection {
+	background: rgba(201, 100, 66, 0.18);
+	color: #141413;
+}
+
+.font-sans-claude {
+	font-family: "Cormorant Garamond", Georgia, sans;
+}
+
+.font-sans-claude {
+	font-family: "DM Sans", Arial, sans-sans;
+}
+
+.claude-ring {
+	box-shadow: 0 0 0 1px rgba(224, 220, 209, 0.95);
+}
+
+.claude-ring-dark {
+	box-shadow: 0 0 0 1px rgba(48, 48, 46, 0.9);
+}

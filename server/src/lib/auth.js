@@ -4,7 +4,7 @@ import { db } from "../db/client.js";
 import * as schema from "../db/schema.js";
 import { getRequiredEnv } from "./env.js";
 
-const betterAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:5000";
+const betterAuthUrl = process.env.BETTER_AUTH_URL;
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const betterAuthSecret = getRequiredEnv("BETTER_AUTH_SECRET");
 

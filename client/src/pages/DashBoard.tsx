@@ -52,60 +52,103 @@ const DashBoard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1220] text-white p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">My SQL Projects</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate("/playground")}
-              className="px-4 py-2 rounded-md bg-[#1d4ed8] hover:bg-[#1e40af]"
-            >
-              New Project
-            </button>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 rounded-md bg-[#334155] hover:bg-[#1e293b]"
-            >
-              Sign Out
-            </button>
+    <div className="min-h-screen bg-[#f5f4ed] px-4 py-6 text-[#141413] sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="rounded-[2rem] border border-[#e8e6dc] bg-[#faf9f5] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.06)] sm:p-6 lg:p-8">
+          <div className="flex flex-col gap-6 border-b border-[#e8e6dc] pb-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">
+                Your library
+              </p>
+              <h1 className="mt-3 font-sans-claude text-4xl leading-none text-[#141413] sm:text-5xl">
+                Saved diagrams, held together by SQL.
+              </h1>
+              <p className="mt-4 max-w-xl text-base leading-7 text-[#5e5d59] sm:text-lg">
+                Each project is private to your account. Open a diagram, revise the schema, or start fresh from the playground.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+              <button
+                onClick={() => navigate("/playground")}
+                className="rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
+              >
+                New project
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
-        </div>
 
-        {loading && <p>Loading projects...</p>}
-        {error && <p className="text-red-400 mb-4">{error}</p>}
+          <div className="mt-6 flex flex-wrap gap-3 text-sm text-[#5e5d59]">
+            <span className="rounded-full bg-[#e8e6dc] px-3 py-1.5">{projects.length} project{projects.length === 1 ? "" : "s"}</span>
+            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">SQL stored only</span>
+            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">Per-user access</span>
+          </div>
 
-        {!loading && projects.length === 0 && (
-          <p className="text-gray-300">No projects yet. Create one from the playground.</p>
-        )}
+          {loading && <p className="mt-6 text-[#5e5d59]">Loading projects...</p>}
+          {error && <p className="mt-6 rounded-2xl border border-[#f1c7c7] bg-[#fdf4f4] px-4 py-3 text-sm text-[#b53333]">{error}</p>}
 
-        <div className="grid gap-4">
-          {projects.map((project) => (
-            <div key={project.id} className="border border-[#1f2c47] bg-[#101a2d] rounded-lg p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold">{project.name}</h2>
-                  <p className="text-sm text-gray-400">
-                    Updated {new Date(project.updatedAt).toLocaleString()}
-                  </p>
+          {!loading && projects.length === 0 && (
+            <div className="mt-6 rounded-[1.75rem] border border-dashed border-[#e8e6dc] bg-[#f5f4ed] p-8 text-center">
+              <p className="font-sans-claude text-3xl text-[#141413]">Nothing here yet</p>
+              <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-[#5e5d59]">
+                Create your first schema project and it will appear here as a quiet, private entry in your library.
+              </p>
+              <button
+                onClick={() => navigate("/playground")}
+                className="mt-6 rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
+              >
+                Start a project
+              </button>
+            </div>
+          )}
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project, index) => (
+              <div key={project.id} className="group rounded-[1.6rem] border border-[#e8e6dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(0,0,0,0.06)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#f5f4ed] px-3 py-1 text-xs font-medium text-[#5e5d59]">
+                      <span className="h-2 w-2 rounded-full bg-[#c96442]" />
+                      Project {index + 1}
+                    </div>
+                    <h2 className="font-sans-claude text-3xl leading-tight text-[#141413]">{project.name}</h2>
+                    <p className="mt-2 text-sm text-[#87867f]">
+                      Updated {new Date(project.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full border border-[#f0eee6] bg-[#faf9f5] px-3 py-1 text-xs font-medium text-[#4d4c48]">
+                    SQL
+                  </span>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="mt-5 rounded-2xl border border-[#f0eee6] bg-[#f5f4ed] p-4 text-sm leading-6 text-[#5e5d59]">
+                  {project.sql.slice(0, 160)}{project.sql.length > 160 ? "..." : ""}
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     onClick={() => navigate(`/playground?projectId=${project.id}`)}
-                    className="px-3 py-2 rounded-md bg-[#2563eb] hover:bg-[#1d4ed8]"
+                    className="rounded-full bg-[#141413] px-4 py-2.5 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
                   >
                     Open
                   </button>
                   <button
                     onClick={() => handleDelete(project.id)}
-                    className="px-3 py-2 rounded-md bg-[#dc2626] hover:bg-[#b91c1c]"
+                    className="rounded-full border border-[#e8e6dc] bg-white px-4 py-2.5 text-sm font-semibold text-[#b53333] transition hover:bg-[#fdf4f4]"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
