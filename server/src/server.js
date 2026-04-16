@@ -65,7 +65,7 @@ app.get("/api/auth/session", async (req, res) => {
     // Bootstrap mode is used only right after Better Auth sign-in/sign-up.
     // Normal app guards should rely on the JWT cookie only.
     if (req.query.bootstrap !== "1") {
-      return res.status(401).json({ user: null });
+      return res.json({ user: null });
     }
 
     const session = await auth.api.getSession({
@@ -73,7 +73,7 @@ app.get("/api/auth/session", async (req, res) => {
     });
 
     if (!session?.user) {
-      return res.status(401).json({ user: null });
+      return res.json({ user: null });
     }
 
     const token = signSessionToken(session.user);
@@ -88,7 +88,7 @@ app.get("/api/auth/session", async (req, res) => {
     });
   } catch {
     clearSessionCookie(res);
-    return res.status(401).json({ user: null });
+    return res.json({ user: null });
   }
 });
 
