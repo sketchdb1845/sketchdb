@@ -19,6 +19,13 @@ interface ParsedForeignKey {
 
 // Initialize the SQL parser
 const parser = new Parser();
+const DEBUG_SQL_PARSER = false;
+
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_SQL_PARSER) {
+    console.log(...args);
+  }
+};
 
 export const parseSQLSchema = (sqlText: string): { nodes: Node[], edges: any[] } => {
   // Input validation
@@ -109,8 +116,8 @@ export const parseSQLSchema = (sqlText: string): { nodes: Node[], edges: any[] }
     // Validate table structure
     validateTables(tables);
 
-    console.log('Parsed tables with FK relationships applied:', tables);
-    console.log('All parsed foreign keys:', foreignKeys);
+    debugLog('Parsed tables with FK relationships applied:', tables);
+    debugLog('All parsed foreign keys:', foreignKeys);
 
     // Convert to React Flow nodes
     const nodes = convertToNodes(tables);
@@ -118,8 +125,8 @@ export const parseSQLSchema = (sqlText: string): { nodes: Node[], edges: any[] }
     // Create edges from foreign key relationships
     const edges = createEdgesFromForeignKeys(nodes);
     
-    console.log('Generated nodes:', nodes);
-    console.log('Generated edges:', edges);
+    debugLog('Generated nodes:', nodes);
+    debugLog('Generated edges:', edges);
 
     // Final validation
     if (nodes.length === 0) {
@@ -154,7 +161,7 @@ const processStatement = (ast: AST, tables: ParsedTable[], foreignKeys: ParsedFo
       parseAlterTableFromAST(astAny, foreignKeys);
       break;
     default:
-      console.log('Unsupported statement type:', astAny.type);
+      debugLog('Unsupported statement type:', astAny.type);
   }
 };
 
@@ -166,14 +173,14 @@ const parseCreateTableFromAST = (ast: any, tables: ParsedTable[], foreignKeys: P
       return;
     }
 
-    console.log('Parsing table:', tableName);
-    console.log('Table AST create_definitions:', JSON.stringify(ast.create_definitions, null, 2));
+    debugLog('Parsing table:', tableName);
+    debugLog('Table AST create_definitions:', JSON.stringify(ast.create_definitions, null, 2));
 
     const attributes: TableAttribute[] = [];
     const tableConstraints = ast.create_definitions || [];
 
     tableConstraints.forEach((def: any, index: number) => {
-      console.log(`Processing definition ${index}:`, JSON.stringify(def, null, 2));
+      debugLog(`Processing definition ${index}:`, JSON.stringify(def, null, 2));
       
       if (def.resource === 'column') {
         // Parse column definition
@@ -183,13 +190,13 @@ const parseCreateTableFromAST = (ast: any, tables: ParsedTable[], foreignKeys: P
         }
       } else if (def.resource === 'constraint') {
         // Parse table-level constraints
-        console.log('Found constraint definition:', def);
+        debugLog('Found constraint definition:', def);
         parseConstraintFromAST(def, tableName, attributes, foreignKeys);
       }
     });
 
     tables.push({ name: tableName, attributes });
-    console.log(`Added table ${tableName} with ${attributes.length} attributes`);
+    debugLog(`Added table ${tableName} with ${attributes.length} attributes`);
   } catch (error) {
     console.error('Error parsing CREATE TABLE from AST:', error);
   }
@@ -200,7 +207,7 @@ const parseColumnFromAST = (columnDef: any, _tableName: string): TableAttribute 
     const columnName = columnDef.column?.column;
     if (!columnName) return null;
 
-    console.log('Parsing column:', columnName, 'Definition:', JSON.stringify(columnDef, null, 2));
+    debugLog('Parsing column:', columnName, 'Definition:', JSON.stringify(columnDef, null, 2));
 
     const dataTypeInfo = columnDef.definition;
     let attributeType: AttributeType = 'normal';
@@ -218,7 +225,7 @@ const parseColumnFromAST = (columnDef: any, _tableName: string): TableAttribute 
     if (columnDef.primary_key === 'primary key') {
       attributeType = 'PK';
       isNotNull = true;
-      console.log('Column', columnName, 'marked as PRIMARY KEY');
+      debugLog('Column', columnName, 'marked as PRIMARY KEY');
     }
 
     // Parse column constraints
@@ -257,7 +264,7 @@ const parseColumnFromAST = (columnDef: any, _tableName: string): TableAttribute 
       refAttr,
     };
 
-    console.log('Parsed column result:', result);
+    debugLog('Parsed column result:', result);
     return result;
   } catch (error) {
     console.error('Error parsing column from AST:', error);
@@ -273,8 +280,8 @@ const parseConstraintFromAST = (
 ) => {
   try {
     const constraintType = constraintDef.constraint_type?.toLowerCase();
-    console.log('Processing constraint type:', constraintType, 'for table:', tableName);
-    console.log('Constraint definition:', JSON.stringify(constraintDef, null, 2));
+    debugLog('Processing constraint type:', constraintType, 'for table:', tableName);
+    debugLog('Constraint definition:', JSON.stringify(constraintDef, null, 2));
 
     switch (constraintType) {
       case 'primary key':
@@ -297,7 +304,7 @@ const parseConstraintFromAST = (
         const refTable = refTableArray[0]?.table; // Get table name from array
         const refColumns = constraintDef.reference_definition?.definition || [];
 
-        console.log('FK processing:', {
+        debugLog('FK processing:', {
           fkColumns,
           refTable,
           refColumns
@@ -307,7 +314,7 @@ const parseConstraintFromAST = (
           const columnName = col.column;
           const referencedColumn = refColumns[index]?.column;
           
-          console.log('Processing FK relationship:', {
+          debugLog('Processing FK relationship:', {
             table: tableName,
             column: columnName,
             referencedTable: refTable,
@@ -331,7 +338,7 @@ const parseConstraintFromAST = (
               referencedColumn,
             });
             
-            console.log('Added FK relationship:', {
+            debugLog('Added FK relationship:', {
               table: tableName,
               column: columnName,
               referencedTable: refTable,
@@ -396,14 +403,14 @@ const parseAlterTableFromAST = (ast: any, foreignKeys: ParsedForeignKey[]) => {
 
 // Fallback manual parsing for problematic statements
 const parseCreateTableManual = (statement: string, tables: ParsedTable[], foreignKeys: ParsedForeignKey[]) => {
-  console.log('Fallback: Parsing CREATE TABLE manually:', statement);
+  debugLog('Fallback: Parsing CREATE TABLE manually:', statement);
   
   // Extract table name
   const tableNameMatch = statement.match(/CREATE\s+TABLE\s+(\w+)\s*\(/i);
   if (!tableNameMatch) return;
   
   const tableName = tableNameMatch[1];
-  console.log('Manual parsing - Table name:', tableName);
+  debugLog('Manual parsing - Table name:', tableName);
   
   // Extract the content between parentheses
   const contentMatch = statement.match(/\(([\s\S]*)\)/);
@@ -414,17 +421,17 @@ const parseCreateTableManual = (statement: string, tables: ParsedTable[], foreig
   
   // Split by commas, but be careful with nested parentheses
   const parts = splitByCommas(content);
-  console.log('Manual parsing - Split parts:', parts);
+  debugLog('Manual parsing - Split parts:', parts);
   
   parts.forEach(part => {
     const trimmedPart = part.trim();
-    console.log('Manual parsing - Parsing part:', trimmedPart);
+    debugLog('Manual parsing - Parsing part:', trimmedPart);
     
     if (trimmedPart.toUpperCase().includes('FOREIGN KEY')) {
       // Parse table-level foreign key constraint: FOREIGN KEY (user_id) REFERENCES users(id)
       const fkMatch = trimmedPart.match(/FOREIGN\s+KEY\s*\(\s*(\w+)\s*\)\s+REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)/i);
       if (fkMatch) {
-        console.log('Manual parsing - Found FK constraint:', fkMatch);
+        debugLog('Manual parsing - Found FK constraint:', fkMatch);
         foreignKeys.push({
           table: tableName,
           column: fkMatch[1],
@@ -459,7 +466,7 @@ const parseCreateTableManual = (statement: string, tables: ParsedTable[], foreig
         let dataType = columnMatch[2].trim();
         const constraints = columnMatch[3].trim().toUpperCase();
         
-        console.log('Manual parsing - Parsed column:', { columnName, dataType, constraints });
+        debugLog('Manual parsing - Parsed column:', { columnName, dataType, constraints });
         
         let attributeType: AttributeType = 'normal';
         let isNotNull = false;
@@ -521,7 +528,7 @@ const parseCreateTableManual = (statement: string, tables: ParsedTable[], foreig
     }
   });
   
-  console.log('Manual parsing - Final attributes for table', tableName, ':', attributes);
+  debugLog('Manual parsing - Final attributes for table', tableName, ':', attributes);
   tables.push({ name: tableName, attributes });
 };
 

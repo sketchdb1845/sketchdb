@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface SQLError {
   type: 'syntax' | 'parsing' | 'validation' | 'constraint' | 'export' | 'import' | 'network' | 'unknown';
   title: string;
@@ -235,19 +237,19 @@ export class SQLErrorHandler {
 export const useErrorHandler = () => {
   const [error, setError] = React.useState<SQLError | null>(null);
   
-  const showError = (error: any, context: 'import' | 'export' | 'validation' = 'unknown' as any) => {
+  const showError = React.useCallback((error: any, context: 'import' | 'export' | 'validation' = 'unknown' as any) => {
     const categorizedError = SQLErrorHandler.categorizeError(error, context);
     setError(categorizedError);
-  };
+  }, []);
   
-  const clearError = () => {
+  const clearError = React.useCallback(() => {
     setError(null);
-  };
+  }, []);
   
-  const retryOperation = (retryCallback: () => void) => {
+  const retryOperation = React.useCallback((retryCallback: () => void) => {
     clearError();
     retryCallback();
-  };
+  }, [clearError]);
   
   return {
     error,
@@ -257,5 +259,3 @@ export const useErrorHandler = () => {
     hasError: error !== null
   };
 };
-
-import React from 'react';
