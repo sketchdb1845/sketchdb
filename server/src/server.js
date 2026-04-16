@@ -11,11 +11,29 @@ import { verifySessionToken } from "./lib/jwt.js";
 import { signSessionToken, getSessionMaxAgeSeconds } from "./lib/jwt.js";
 
 const authCookieName = "sketchdb_session";
+const isProduction = process.env.NODE_ENV === "production";
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const authBaseUrl = process.env.BETTER_AUTH_URL || `http://localhost:${port}`;
+const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction || authBaseUrl.startsWith("https://"),
+  path: "/",
+};
+
+const setSessionCookie = (res, token) => {
+  res.cookie(authCookieName, token, {
+    ...sessionCookieOptions,
+    maxAge: getSessionMaxAgeSeconds() * 1000,
+  });
+};
+
+const clearSessionCookie = (res) => {
+  res.clearCookie(authCookieName, sessionCookieOptions);
+};
 
 app.use(
   cors({
@@ -59,13 +77,7 @@ app.get("/api/auth/session", async (req, res) => {
     }
 
     const token = signSessionToken(session.user);
-    res.cookie(authCookieName, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: authBaseUrl.startsWith("https://"),
-      maxAge: getSessionMaxAgeSeconds() * 1000,
-      path: "/",
-    });
+    setSessionCookie(res, token);
 
     return res.json({
       user: {
@@ -75,13 +87,13 @@ app.get("/api/auth/session", async (req, res) => {
       },
     });
   } catch {
-    res.clearCookie(authCookieName, { path: "/" });
+    clearSessionCookie(res);
     return res.status(401).json({ user: null });
   }
 });
 
 app.post("/api/auth/logout", (req, res) => {
-  res.clearCookie(authCookieName, { path: "/" });
+  clearSessionCookie(res);
   return res.status(204).send();
 });
 
@@ -91,13 +103,7 @@ app.use("/api/auth", async (req, res, next) => {
     res.json = (body) => {
       if (body?.data?.user) {
         const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: authBaseUrl.startsWith("https://"),
-          maxAge: getSessionMaxAgeSeconds() * 1000,
-          path: "/",
-        });
+        setSessionCookie(res, token);
       }
       return originalJson(body);
     };
@@ -108,20 +114,14 @@ app.use("/api/auth", async (req, res, next) => {
     res.json = (body) => {
       if (body?.data?.user) {
         const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: authBaseUrl.startsWith("https://"),
-          maxAge: getSessionMaxAgeSeconds() * 1000,
-          path: "/",
-        });
+        setSessionCookie(res, token);
       }
       return originalJson(body);
     };
   }
 
   if (req.method === "POST" && req.path === "/sign-out") {
-    res.clearCookie(authCookieName, { path: "/" });
+    clearSessionCookie(res);
   }
 
   return arcjetMiddleware(req, res, () => toNodeHandler(auth)(req, res, next));
