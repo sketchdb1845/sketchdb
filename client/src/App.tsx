@@ -32,7 +32,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => {
   return (
-    <div className="bg-[#141414] w-screen min-h-screen">
+    <div className="bg-[#ad9f9f] w-screen min-h-screen overflow-hidden">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
