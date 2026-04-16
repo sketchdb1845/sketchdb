@@ -16,10 +16,44 @@ const app = express();
 const port = Number(process.env.PORT || 4000);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const authBaseUrl = process.env.BETTER_AUTH_URL || `http://localhost:${port}`;
+const clientOrigins = clientOrigin
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isHttpsAuthBase = authBaseUrl.startsWith("https://");
+
+function isCrossOriginAuthFlow() {
+  try {
+    const authOrigin = new URL(authBaseUrl).origin;
+    return clientOrigins.some((origin) => {
+      try {
+        return new URL(origin).origin !== authOrigin;
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
+function getSessionCookieOptions() {
+  const crossOrigin = isCrossOriginAuthFlow();
+  const sameSite = crossOrigin && isHttpsAuthBase ? "none" : "lax";
+
+  return {
+    httpOnly: true,
+    sameSite,
+    secure: isHttpsAuthBase,
+    maxAge: getSessionMaxAgeSeconds() * 1000,
+    path: "/",
+  };
+}
 
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: clientOrigins,
     credentials: true,
   })
 );
@@ -47,7 +81,7 @@ app.get("/api/auth/session", async (req, res) => {
     // Bootstrap mode is used only right after Better Auth sign-in/sign-up.
     // Normal app guards should rely on the JWT cookie only.
     if (req.query.bootstrap !== "1") {
-      return res.status(401).json({ user: null });
+      return res.json({ user: null });
     }
 
     const session = await auth.api.getSession({
@@ -59,13 +93,7 @@ app.get("/api/auth/session", async (req, res) => {
     }
 
     const token = signSessionToken(session.user);
-    res.cookie(authCookieName, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: authBaseUrl.startsWith("https://"),
-      maxAge: getSessionMaxAgeSeconds() * 1000,
-      path: "/",
-    });
+    res.cookie(authCookieName, token, getSessionCookieOptions());
 
     return res.json({
       user: {
@@ -76,7 +104,7 @@ app.get("/api/auth/session", async (req, res) => {
     });
   } catch {
     res.clearCookie(authCookieName, { path: "/" });
-    return res.status(401).json({ user: null });
+    return res.json({ user: null });
   }
 });
 
@@ -91,13 +119,7 @@ app.use("/api/auth", async (req, res, next) => {
     res.json = (body) => {
       if (body?.data?.user) {
         const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: authBaseUrl.startsWith("https://"),
-          maxAge: getSessionMaxAgeSeconds() * 1000,
-          path: "/",
-        });
+        res.cookie(authCookieName, token, getSessionCookieOptions());
       }
       return originalJson(body);
     };
@@ -108,13 +130,7 @@ app.use("/api/auth", async (req, res, next) => {
     res.json = (body) => {
       if (body?.data?.user) {
         const token = signSessionToken(body.data.user);
-        res.cookie(authCookieName, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: authBaseUrl.startsWith("https://"),
-          maxAge: getSessionMaxAgeSeconds() * 1000,
-          path: "/",
-        });
+        res.cookie(authCookieName, token, getSessionCookieOptions());
       }
       return originalJson(body);
     };
