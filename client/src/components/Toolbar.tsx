@@ -15,8 +15,6 @@ interface ToolbarProps {
 
 export const Toolbar: React.FC<ToolbarProps> = ({ 
   projectTitle,
-  projectStatus,
-  projectDescription,
   onAddTable, 
   onExportSQL, 
   onImportSchema,
