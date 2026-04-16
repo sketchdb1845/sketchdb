@@ -2,9 +2,12 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
+import { eq } from "drizzle-orm";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import projectsRouter from "./routes/projects.js";
 import { auth } from "./lib/auth.js";
+import { db } from "./db/client.js";
+import { users } from "./db/schema.js";
 import { arcjetMiddleware } from "./middleware/arcjet.js";
 import { requireJwtAuth } from "./middleware/jwtAuth.js";
 import { verifySessionToken } from "./lib/jwt.js";
@@ -71,6 +74,48 @@ function setJwtCookieForAuthUser(res, body) {
   res.cookie(authCookieName, token, getSessionCookieOptions());
 }
 
+function extractAuthEmailFromRequestBody(body) {
+  if (!body || typeof body !== "object") {
+    return "";
+  }
+
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  return email;
+}
+
+function hasJwtCookieHeader(res) {
+  const current = res.getHeader("Set-Cookie");
+  if (!current) {
+    return false;
+  }
+
+  const values = Array.isArray(current) ? current : [String(current)];
+  return values.some((value) => String(value).startsWith(`${authCookieName}=`));
+}
+
+async function trySetJwtCookieByEmail(res, email) {
+  if (!email || hasJwtCookieHeader(res)) {
+    return;
+  }
+
+  const rows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!rows[0]) {
+    return;
+  }
+
+  const token = signSessionToken(rows[0]);
+  res.cookie(authCookieName, token, getSessionCookieOptions());
+}
+
 function attachAuthCookieBridge(req, res) {
   const isEmailSignIn = req.method === "POST" && req.path === "/sign-in/email";
   const isEmailSignUp = req.method === "POST" && req.path === "/sign-up/email";
@@ -83,6 +128,7 @@ function attachAuthCookieBridge(req, res) {
   const originalSend = res.send.bind(res);
   const originalWrite = res.write.bind(res);
   const originalEnd = res.end.bind(res);
+  const requestEmail = extractAuthEmailFromRequestBody(req.body);
 
   const chunks = [];
 
@@ -117,16 +163,28 @@ function attachAuthCookieBridge(req, res) {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, typeof encoding === "string" ? encoding : undefined));
     }
 
-    if (chunks.length > 0) {
-      try {
-        const raw = Buffer.concat(chunks).toString("utf8");
-        setJwtCookieForAuthUser(res, JSON.parse(raw));
-      } catch {
-        // Ignore non-JSON payloads.
+    const finalize = async () => {
+      if (chunks.length > 0) {
+        try {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          setJwtCookieForAuthUser(res, JSON.parse(raw));
+        } catch {
+          // Ignore non-JSON payloads.
+        }
       }
-    }
 
-    return originalEnd(chunk, encoding, callback);
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        await trySetJwtCookieByEmail(res, requestEmail);
+      }
+
+      originalEnd(chunk, encoding, callback);
+    };
+
+    finalize().catch(() => {
+      originalEnd(chunk, encoding, callback);
+    });
+
+    return res;
   };
 }
 
