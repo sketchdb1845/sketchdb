@@ -7,18 +7,11 @@ import { getRequiredEnv } from "./env.js";
 const betterAuthUrl = process.env.BETTER_AUTH_URL;
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const betterAuthSecret = getRequiredEnv("BETTER_AUTH_SECRET");
-const trustedOrigins = [
-  ...clientOrigin
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-  betterAuthUrl,
-].filter(Boolean);
 
 export const auth = betterAuth({
   secret: betterAuthSecret,
   baseURL: betterAuthUrl,
-  trustedOrigins,
+  trustedOrigins: [clientOrigin, betterAuthUrl],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

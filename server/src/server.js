@@ -2,12 +2,9 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
-import { eq } from "drizzle-orm";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import projectsRouter from "./routes/projects.js";
 import { auth } from "./lib/auth.js";
-import { db } from "./db/client.js";
-import { users } from "./db/schema.js";
 import { arcjetMiddleware } from "./middleware/arcjet.js";
 import { requireJwtAuth } from "./middleware/jwtAuth.js";
 import { verifySessionToken } from "./lib/jwt.js";
@@ -19,178 +16,10 @@ const app = express();
 const port = Number(process.env.PORT || 4000);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const authBaseUrl = process.env.BETTER_AUTH_URL || `http://localhost:${port}`;
-const clientOrigins = clientOrigin
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-const isHttpsAuthBase = authBaseUrl.startsWith("https://");
-
-function isCrossOriginAuthFlow() {
-  try {
-    const authOrigin = new URL(authBaseUrl).origin;
-    return clientOrigins.some((origin) => {
-      try {
-        return new URL(origin).origin !== authOrigin;
-      } catch {
-        return false;
-      }
-    });
-  } catch {
-    return false;
-  }
-}
-
-function getSessionCookieOptions() {
-  const crossOrigin = isCrossOriginAuthFlow();
-  const sameSite = crossOrigin && isHttpsAuthBase ? "none" : "lax";
-
-  return {
-    httpOnly: true,
-    sameSite,
-    secure: isHttpsAuthBase,
-    maxAge: getSessionMaxAgeSeconds() * 1000,
-    path: "/",
-  };
-}
-
-function extractAuthUserFromBody(body) {
-  return (
-    body?.data?.user ||
-    body?.user ||
-    body?.data?.session?.user ||
-    body?.session?.user ||
-    null
-  );
-}
-
-function setJwtCookieForAuthUser(res, body) {
-  const user = extractAuthUserFromBody(body);
-  if (!user?.id || !user?.email) {
-    return;
-  }
-
-  const token = signSessionToken(user);
-  res.cookie(authCookieName, token, getSessionCookieOptions());
-}
-
-function extractAuthEmailFromRequestBody(body) {
-  if (!body || typeof body !== "object") {
-    return "";
-  }
-
-  const email = typeof body.email === "string" ? body.email.trim() : "";
-  return email;
-}
-
-function hasJwtCookieHeader(res) {
-  const current = res.getHeader("Set-Cookie");
-  if (!current) {
-    return false;
-  }
-
-  const values = Array.isArray(current) ? current : [String(current)];
-  return values.some((value) => String(value).startsWith(`${authCookieName}=`));
-}
-
-async function trySetJwtCookieByEmail(res, email) {
-  if (!email || hasJwtCookieHeader(res)) {
-    return;
-  }
-
-  const rows = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-    })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  if (!rows[0]) {
-    return;
-  }
-
-  const token = signSessionToken(rows[0]);
-  res.cookie(authCookieName, token, getSessionCookieOptions());
-}
-
-function attachAuthCookieBridge(req, res) {
-  const isEmailSignIn = req.method === "POST" && req.path === "/sign-in/email";
-  const isEmailSignUp = req.method === "POST" && req.path === "/sign-up/email";
-
-  if (!isEmailSignIn && !isEmailSignUp) {
-    return;
-  }
-
-  const originalJson = res.json.bind(res);
-  const originalSend = res.send.bind(res);
-  const originalWrite = res.write.bind(res);
-  const originalEnd = res.end.bind(res);
-  const requestEmail = extractAuthEmailFromRequestBody(req.body);
-
-  const chunks = [];
-
-  res.json = (body) => {
-    setJwtCookieForAuthUser(res, body);
-    return originalJson(body);
-  };
-
-  res.send = (body) => {
-    if (typeof body === "string") {
-      try {
-        setJwtCookieForAuthUser(res, JSON.parse(body));
-      } catch {
-        // Ignore non-JSON payloads.
-      }
-    } else if (body && typeof body === "object") {
-      setJwtCookieForAuthUser(res, body);
-    }
-
-    return originalSend(body);
-  };
-
-  res.write = (chunk, encoding, callback) => {
-    if (chunk) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, typeof encoding === "string" ? encoding : undefined));
-    }
-    return originalWrite(chunk, encoding, callback);
-  };
-
-  res.end = (chunk, encoding, callback) => {
-    if (chunk) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, typeof encoding === "string" ? encoding : undefined));
-    }
-
-    const finalize = async () => {
-      if (chunks.length > 0) {
-        try {
-          const raw = Buffer.concat(chunks).toString("utf8");
-          setJwtCookieForAuthUser(res, JSON.parse(raw));
-        } catch {
-          // Ignore non-JSON payloads.
-        }
-      }
-
-      if (res.statusCode >= 200 && res.statusCode < 400) {
-        await trySetJwtCookieByEmail(res, requestEmail);
-      }
-
-      originalEnd(chunk, encoding, callback);
-    };
-
-    finalize().catch(() => {
-      originalEnd(chunk, encoding, callback);
-    });
-
-    return res;
-  };
-}
 
 app.use(
   cors({
-    origin: clientOrigins,
+    origin: clientOrigin,
     credentials: true,
   })
 );
@@ -218,7 +47,7 @@ app.get("/api/auth/session", async (req, res) => {
     // Bootstrap mode is used only right after Better Auth sign-in/sign-up.
     // Normal app guards should rely on the JWT cookie only.
     if (req.query.bootstrap !== "1") {
-      return res.json({ user: null });
+      return res.status(401).json({ user: null });
     }
 
     const session = await auth.api.getSession({
@@ -230,7 +59,13 @@ app.get("/api/auth/session", async (req, res) => {
     }
 
     const token = signSessionToken(session.user);
-    res.cookie(authCookieName, token, getSessionCookieOptions());
+    res.cookie(authCookieName, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: authBaseUrl.startsWith("https://"),
+      maxAge: getSessionMaxAgeSeconds() * 1000,
+      path: "/",
+    });
 
     return res.json({
       user: {
@@ -241,7 +76,7 @@ app.get("/api/auth/session", async (req, res) => {
     });
   } catch {
     res.clearCookie(authCookieName, { path: "/" });
-    return res.json({ user: null });
+    return res.status(401).json({ user: null });
   }
 });
 
@@ -251,7 +86,39 @@ app.post("/api/auth/logout", (req, res) => {
 });
 
 app.use("/api/auth", async (req, res, next) => {
-  attachAuthCookieBridge(req, res);
+  if (req.method === "POST" && req.path === "/sign-in/email") {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (body?.data?.user) {
+        const token = signSessionToken(body.data.user);
+        res.cookie(authCookieName, token, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: authBaseUrl.startsWith("https://"),
+          maxAge: getSessionMaxAgeSeconds() * 1000,
+          path: "/",
+        });
+      }
+      return originalJson(body);
+    };
+  }
+
+  if (req.method === "POST" && req.path === "/sign-up/email") {
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      if (body?.data?.user) {
+        const token = signSessionToken(body.data.user);
+        res.cookie(authCookieName, token, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: authBaseUrl.startsWith("https://"),
+          maxAge: getSessionMaxAgeSeconds() * 1000,
+          path: "/",
+        });
+      }
+      return originalJson(body);
+    };
+  }
 
   if (req.method === "POST" && req.path === "/sign-out") {
     res.clearCookie(authCookieName, { path: "/" });
