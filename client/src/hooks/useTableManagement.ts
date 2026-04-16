@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNodesState } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import type { TableAttribute, AttributeType, DataType, TableData } from '../types';
+import { getRandomTableColor } from '../types';
 
 export const useTableManagement = (
   initialNodes: Node[], 
@@ -23,6 +24,9 @@ export const useTableManagement = (
   
   const selectedTable = nodes.find((n) => n.id === selectedTableId);
   const attributes = Array.isArray(selectedTable?.data?.attributes) ? selectedTable.data.attributes : [];
+  const selectedTableColor = typeof selectedTable?.data?.color === 'string'
+    ? selectedTable.data.color
+    : '';
 
   // Helper functions for FK relationships
   const getAvailableTables = useCallback(() => {
@@ -137,7 +141,15 @@ export const useTableManagement = (
   }, [setEdges]);
 
   const importNodes = useCallback((newNodes: Node[]) => {
-    setNodes(newNodes);
+    setNodes(
+      newNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          color: typeof node.data?.color === 'string' ? node.data.color : getRandomTableColor(),
+        },
+      }))
+    );
     setSelectedTableId(null);
   }, [setNodes, setSelectedTableId]);
 
@@ -150,12 +162,31 @@ export const useTableManagement = (
         data: {
           label: `Table ${nds.length + 1}`,
           attributes: [],
+          color: getRandomTableColor(),
         },
         position: { x: 100 + nds.length * 50, y: 100 + nds.length * 50 },
         type: 'tableNode',
       },
     ]);
   }, [setNodes]);
+
+  const setTableColor = useCallback((color: string) => {
+    if (!selectedTableId) return;
+
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === selectedTableId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                color,
+              },
+            }
+          : node
+      )
+    );
+  }, [selectedTableId, setNodes]);
 
   // Delete Table
   const deleteTable = useCallback(() => {
@@ -564,6 +595,7 @@ export const useTableManagement = (
     selectedTableId,
     selectedTable,
     attributes,
+    selectedTableColor,
     isEditingTableName,
     editTableName,
     attrName,
@@ -578,6 +610,7 @@ export const useTableManagement = (
     addTable,
     deleteTable,
     addAttribute,
+    setTableColor,
     startEditTableName,
     saveTableName,
     cancelEditTableName,

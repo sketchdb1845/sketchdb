@@ -13,14 +13,25 @@ interface TableNodeProps {
 
 export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
   const attributes = Array.isArray(data.attributes) ? data.attributes : [];
+  const tableColor = typeof data.color === "string" ? data.color : "#6b7280";
+  const textColor = getReadableTextColor(tableColor);
+  const tableRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    tableRef.current?.style.setProperty('--table-color', tableColor);
+    tableRef.current?.style.setProperty('--table-text-color', textColor);
+  }, [tableColor, textColor]);
 
   return (
     <div 
-      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-white border-blue-500"
+      ref={tableRef}
+      className="border-2 rounded-lg min-w-[200px] shadow-md relative bg-[#23233d] overflow-hidden border-[var(--table-color)]"
     >
+      <div className="h-1 w-full bg-[var(--table-color)]" />
+
       {/* Table Header */}
       <div 
-        className="text-white px-3 py-2 rounded-t-lg font-bold text-center bg-blue-500"
+        className="px-3 py-3 font-bold text-center bg-[var(--table-color)] text-[var(--table-text-color)]"
       >
         {typeof data.label === "string" ? data.label : `Table ${id}`}
       </div>
@@ -31,9 +42,9 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
           attributes.map((attr, idx) => (
             <div
               key={idx}
-              className={`px-3 py-1 text-xs flex justify-between items-center relative min-h-[24px] ${
+              className={`px-3 py-1 text-xs flex justify-between items-center relative min-h-[24px] text-gray-100 ${
                 idx < attributes.length - 1 ? "border-b border-gray-200" : ""
-              } ${idx % 2 === 0 ? "bg-gray-50" : ""}`}
+              } ${idx % 2 === 0 ? "bg-white/5" : ""}`}
             >
               {/* Left handle (incoming connections) */}
               <Handle
@@ -43,7 +54,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 style={{
                   width: 8,
                   height: 8,
-                  backgroundColor: attr.type === "FK" ? "#FF6B6B" : "#0074D9",
+                  backgroundColor: attr.type === "FK" ? "#FF6B6B" : tableColor,
                   position: 'absolute',
                   left: -4,
                   top: '50%',
@@ -61,7 +72,7 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
                 style={{
                   width: 8,
                   height: 8,
-                  backgroundColor: attr.type === "PK" ? "#FFD700" : "#0074D9",
+                  backgroundColor: attr.type === "PK" ? "#FFD700" : tableColor,
                   position: 'absolute',
                   right: -4,
                   top: '50%',
@@ -95,3 +106,15 @@ export const TableNode: React.FC<TableNodeProps> = ({ data, id }) => {
     </div>
   );
 };
+
+function getReadableTextColor(color: string) {
+  const hex = color.replace("#", "");
+  if (hex.length !== 6) return "#ffffff";
+
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+  return luminance > 0.62 ? "#111827" : "#ffffff";
+}

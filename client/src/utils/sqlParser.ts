@@ -2,6 +2,7 @@ import type  { Node } from '@xyflow/react';
 import type{AST} from 'node-sql-parser';
 import { Parser } from 'node-sql-parser';
 import type  { TableAttribute, AttributeType, DataType } from '../types';
+import { getRandomTableColor } from '../types';
 import { createEdgesFromForeignKeys } from './connectionUtils';
 
 interface ParsedTable {
@@ -678,6 +679,7 @@ const convertToNodes = (tables: ParsedTable[]): Node[] => {
       label: table.name,  // Add label for SQL export compatibility
       table: table.name,  // Keep table for backward compatibility
       attributes: table.attributes,
+      color: getRandomTableColor(),
     },
   }));
 };

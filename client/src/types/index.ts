@@ -30,23 +30,23 @@ export interface TableNodeData extends TableData {
 
 export type AttributeType = 'PK' | 'FK' | 'normal';
 
-export type DataType = 
-  | 'VARCHAR(255)' 
-  | 'VARCHAR(100)' 
-  | 'VARCHAR(50)' 
-  | 'TEXT' 
-  | 'INTEGER' 
-  | 'BIGINT' 
-  | 'DECIMAL(10,2)' 
-  | 'FLOAT' 
-  | 'DOUBLE' 
-  | 'BOOLEAN' 
-  | 'DATE' 
-  | 'DATETIME' 
-  | 'TIMESTAMP' 
-  | 'TIME' 
-  | 'CHAR(10)' 
-  | 'JSON' 
+export type DataType =
+  | 'VARCHAR(255)'
+  | 'VARCHAR(100)'
+  | 'VARCHAR(50)'
+  | 'TEXT'
+  | 'INTEGER'
+  | 'BIGINT'
+  | 'DECIMAL(10,2)'
+  | 'FLOAT'
+  | 'DOUBLE'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'DATETIME'
+  | 'TIMESTAMP'
+  | 'TIME'
+  | 'CHAR(10)'
+  | 'JSON'
   | 'BLOB';
 
 export const DATA_TYPES: DataType[] = [
@@ -68,3 +68,21 @@ export const DATA_TYPES: DataType[] = [
   'JSON',
   'BLOB'
 ];
+
+
+export const TABLE_COLOR_OPTIONS = [
+  '#14b8a6',
+  '#0f766e',
+  '#3b82f6',
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#6b7280',
+] as const;
+
+export const getRandomTableColor = () =>
+  TABLE_COLOR_OPTIONS[Math.floor(Math.random() * TABLE_COLOR_OPTIONS.length)];

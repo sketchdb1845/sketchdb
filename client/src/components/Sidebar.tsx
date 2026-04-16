@@ -1,9 +1,23 @@
 import React from "react";
 import type { Node } from "@xyflow/react";
 import type { TableAttribute, AttributeType, DataType } from "../types/index";
-import { DATA_TYPES } from "../types/index";
+import { DATA_TYPES, TABLE_COLOR_OPTIONS } from "../types/index";
 import { DatabaseBackup } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const TABLE_COLOR_CLASS_MAP: Record<string, string> = {
+  '#14b8a6': 'bg-[#14b8a6]',
+  '#0f766e': 'bg-[#0f766e]',
+  '#3b82f6': 'bg-[#3b82f6]',
+  '#6366f1': 'bg-[#6366f1]',
+  '#8b5cf6': 'bg-[#8b5cf6]',
+  '#ec4899': 'bg-[#ec4899]',
+  '#ef4444': 'bg-[#ef4444]',
+  '#f97316': 'bg-[#f97316]',
+  '#eab308': 'bg-[#eab308]',
+  '#22c55e': 'bg-[#22c55e]',
+  '#6b7280': 'bg-[#6b7280]',
+};
 
 interface SidebarProps {
   selectedTable?: Node;
@@ -13,6 +27,7 @@ interface SidebarProps {
   attrName: string;
   attrType: AttributeType;
   attrDataType: DataType;
+  tableColor: string;
   refTable: string;
   refAttr: string;
   onStartEditTableName?: () => void;
@@ -23,6 +38,7 @@ interface SidebarProps {
   onAttrNameChange?: (val: string) => void;
   onAttrDataTypeChange?: (val: DataType) => void;
   onAttrTypeChange?: (val: AttributeType) => void;
+  onTableColorChange?: (val: string) => void;
   onRefTableChange?: (val: string) => void;
   onRefAttrChange?: (val: string) => void;
   onAddAttribute?: () => void;
@@ -54,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   attrName,
   attrType,
   attrDataType,
+  tableColor,
   refTable,
   refAttr,
   onStartEditTableName,
@@ -64,6 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAttrNameChange,
   onAttrDataTypeChange,
   onAttrTypeChange,
+  onTableColorChange,
   onRefTableChange,
   onRefAttrChange,
   onAddAttribute,
@@ -79,8 +97,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   getAvailableTables,
 }) => {
   const navigate = useNavigate();
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    sidebarRef.current?.style.setProperty('--table-color', tableColor || TABLE_COLOR_OPTIONS[0]);
+  }, [tableColor]);
+
   return (
-    <div className="w-72 lg:w-80 xl:w-96 bg-[#020817] border-r-2 border-gray-200 shadow-lg p-6 overflow-y-auto max-h-screen text-white">
+    <div ref={sidebarRef} className="w-72 lg:w-80 xl:w-96 bg-[#020817] border-r-2 border-gray-200 shadow-lg p-6 overflow-y-auto max-h-screen text-white">
       <div className="flex flex-row justify-between mb-4 border-b border-gray-600 pb-5">
         <h3
           className="text-xl font-bold text-white cursor-pointer"
@@ -152,6 +176,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               Delete
             </button>
+          </div>
+
+          {/* Table Color */}
+          <div className="mb-6 bg-gray-800 p-4 rounded-lg border border-gray-600">
+            <h5 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wide">
+              Table Color
+            </h5>
+
+            <div className="grid grid-cols-6 gap-2 mb-4">
+              {TABLE_COLOR_OPTIONS.map((color) => {
+                const isSelected = tableColor.toLowerCase() === color.toLowerCase();
+
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => onTableColorChange?.(color)}
+                    className={`h-8 w-8 rounded-md border-2 transition-all duration-200 ${
+                      isSelected ? "border-white scale-105 shadow-lg" : "border-transparent hover:scale-105"
+                    } ${TABLE_COLOR_CLASS_MAP[color] || 'bg-gray-500'}`}
+                    title={color}
+                    aria-label={`Set table color to ${color}`}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={tableColor || TABLE_COLOR_OPTIONS[0]}
+                onChange={(e) => onTableColorChange?.(e.target.value)}
+                className="h-10 w-12 rounded-md border border-gray-600 bg-transparent p-1"
+                title="Custom table color"
+                aria-label="Custom table color"
+              />
+              <div className="flex-1 rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-200">
+                Custom: <span className="font-mono">{(tableColor || TABLE_COLOR_OPTIONS[0]).toUpperCase()}</span>
+              </div>
+            </div>
           </div>
 
           {/* Current Attributes */}

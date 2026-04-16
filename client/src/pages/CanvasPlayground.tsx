@@ -73,9 +73,10 @@ export default function CanvasPlayground() {
   // Table management hook
   const {
     nodes,
-    selectedTableId, // <-- add this
+    selectedTableId,
     selectedTable,
     attributes,
+    selectedTableColor,
     isEditingTableName,
     editTableName,
     attrName,
@@ -89,6 +90,7 @@ export default function CanvasPlayground() {
     addTable,
     deleteTable,
     addAttribute,
+    setTableColor,
     startEditTableName,
     saveTableName,
     cancelEditTableName,
@@ -314,6 +316,7 @@ export default function CanvasPlayground() {
         attrName={attrName}
         attrType={attrType}
         attrDataType={attrDataType}
+        tableColor={selectedTableColor}
         refTable={refTable}
         refAttr={refAttr}
         onStartEditTableName={startEditTableName}
@@ -324,6 +327,7 @@ export default function CanvasPlayground() {
         onAttrNameChange={setAttrName}
         onAttrDataTypeChange={setAttrDataType}
         onAttrTypeChange={setAttrType}
+        onTableColorChange={setTableColor}
         onRefTableChange={setRefTable}
         onRefAttrChange={setRefAttr}
         onAddAttribute={handleAddAttribute}
