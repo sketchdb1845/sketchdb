@@ -438,13 +438,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <div className="mt-3 flex items-center gap-2">
                             <button
                               onClick={() => onStartAttrEdit?.(idx)}
-                              className="rounded-full border border-[#e8e6dc] bg-white px-3 py-2 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
+                              className="w-1/2 rounded-full border border-[#e8e6dc] bg-white px-3 py-2 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => onDeleteAttribute?.(idx)}
-                              className="rounded-full bg-[#b53333] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#9f2a2a]"
+                              className="w-1/2 rounded-full bg-[#b53333] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#9f2a2a]"
                             >
                               Delete
                             </button>

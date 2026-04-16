@@ -32,3 +32,5 @@ export const auth = betterAuth({
     },
   },
 });
+
+export const jwtSecret = getRequiredEnv("JWT_SECRET");

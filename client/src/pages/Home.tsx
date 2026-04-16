@@ -1,7 +1,38 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAppSession } from "../lib/authClient";
 
 const Home = () => {
   const navigate = useNavigate();
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const session = await getAppSession();
+      if (session.user?.name?.trim()) {
+        setProfileName(session.user.name.trim());
+        return;
+      }
+
+      if (session.user?.email?.trim()) {
+        setProfileName(session.user.email.trim().split("@")[0]);
+        return;
+      }
+
+      setProfileName(null);
+    };
+
+    loadSession();
+  }, []);
+
+  const profileInitial = useMemo(() => {
+    if (!profileName) {
+      return "U";
+    }
+
+    return profileName.charAt(0).toUpperCase();
+  }, [profileName]);
+
   return (
     <section className="min-h-screen bg-[#f5f4ed] text-[#1F1F1E]">
       <div className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -20,12 +51,25 @@ const Home = () => {
             >
               Projects
             </button>
-            <button
-              onClick={() => navigate("/auth?mode=signup")}
-              className="rounded-full bg-[#c96442] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#b95d3c]"
-            >
-              Create account
-            </button>
+            {profileName ? (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="inline-flex items-center gap-2 rounded-full border border-[#e8e6dc] bg-white px-3 py-2 text-sm font-medium text-[#4d4c48] transition hover:border-[#d1cfc5] hover:bg-[#faf9f5]"
+                title="Open your dashboard"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#c96442] text-xs font-semibold text-[#faf9f5]">
+                  {profileInitial}
+                </span>
+                <span className="max-w-[150px] truncate">{profileName}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/auth?mode=signup")}
+                className="rounded-full bg-[#c96442] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#b95d3c]"
+              >
+                Create account
+              </button>
+            )}
           </div>
         </header>
 

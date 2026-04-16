@@ -46,7 +46,7 @@ import { generateSQL, copyToClipboard } from "../utils/sqlGenerator";
 import { parseSQLSchema } from "../utils/sqlParser";
 import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
 import { useErrorHandler } from "../utils/errorHandler";
-import { authClient } from "../lib/authClient";
+import { getAppSession } from "../lib/authClient";
 import { createProject, getProjectById, updateProject } from "../lib/projectsApi";
 
 // Node types configuration
@@ -137,8 +137,8 @@ export default function CanvasPlayground() {
   useEffect(() => {
     const loadSessionAndProject = async () => {
       try {
-        const session = await authClient.getSession();
-        if (!session.data?.user) {
+        const session = await getAppSession();
+        if (!session.user) {
           navigate("/auth?mode=signin");
           return;
         }

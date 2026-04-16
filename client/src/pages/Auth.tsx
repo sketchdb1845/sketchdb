@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { authClient } from "../lib/authClient";
+import { authClient, getAppSession } from "../lib/authClient";
 
 type Mode = "signin" | "signup" | "forgot" | "reset";
 
@@ -25,27 +25,22 @@ export default function Auth() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const restore = async () => {
+      const session = await getAppSession();
+      if (session.user) {
+        navigate("/dashboard");
+      }
+    };
+
+    restore();
+  }, [navigate]);
+
   const heading = useMemo(() => {
     if (mode === "signup") return "Create your account";
     if (mode === "forgot") return "Forgot password";
     if (mode === "reset") return "Reset password";
     return "Sign in";
-  }, [mode]);
-
-  const supportingCopy = useMemo(() => {
-    if (mode === "signup") {
-      return "Create a private workspace for your SQL diagrams. Every project stays tied to your account.";
-    }
-
-    if (mode === "forgot") {
-      return "We’ll send a reset link if the account exists. The recovery flow stays minimal and direct.";
-    }
-
-    if (mode === "reset") {
-      return "Choose a new password and return to your projects without losing the data you already saved.";
-    }
-
-    return "Sign back in to reopen your saved diagrams, edit SQL, and keep your project list in sync.";
   }, [mode]);
 
   const onSignUp = async () => {
@@ -64,6 +59,7 @@ export default function Auth() {
       throw new Error(result.error.message);
     }
 
+    await getAppSession({ bootstrap: true });
     navigate("/dashboard");
   };
 
@@ -74,6 +70,7 @@ export default function Auth() {
       throw new Error(result.error.message);
     }
 
+    await getAppSession({ bootstrap: true });
     navigate("/dashboard");
   };
 
