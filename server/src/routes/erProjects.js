@@ -2,32 +2,32 @@ import express from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client.js";
-import { projects } from "../db/schema.js";
+import { erProjects } from "../db/schema.js";
 
 const router = express.Router();
 
-const createProjectSchema = z.object({
+const createErProjectSchema = z.object({
   name: z.string().trim().min(1).max(150),
-  sql: z.string().trim().min(1),
+  erJson: z.string().trim().min(1),
 });
 
-const updateProjectSchema = z.object({
+const updateErProjectSchema = z.object({
   name: z.string().trim().min(1).max(150).optional(),
-  sql: z.string().trim().min(1).optional(),
+  erJson: z.string().trim().min(1).optional(),
 });
 
 router.get("/", async (req, res) => {
   const rows = await db
     .select({
-      id: projects.id,
-      name: projects.name,
-      sql: projects.sql,
-      createdAt: projects.createdAt,
-      updatedAt: projects.updatedAt,
+      id: erProjects.id,
+      name: erProjects.name,
+      erJson: erProjects.erJson,
+      createdAt: erProjects.createdAt,
+      updatedAt: erProjects.updatedAt,
     })
-    .from(projects)
-    .where(eq(projects.userId, req.user.id))
-    .orderBy(desc(projects.updatedAt));
+    .from(erProjects)
+    .where(eq(erProjects.userId, req.user.id))
+    .orderBy(desc(erProjects.updatedAt));
 
   return res.json({ projects: rows });
 });
@@ -35,8 +35,8 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const rows = await db
     .select()
-    .from(projects)
-    .where(and(eq(projects.id, req.params.id), eq(projects.userId, req.user.id)))
+    .from(erProjects)
+    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
     .limit(1);
 
   if (!rows[0]) {
@@ -47,17 +47,17 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const parsed = createProjectSchema.safeParse(req.body);
+  const parsed = createErProjectSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
   const [created] = await db
-    .insert(projects)
+    .insert(erProjects)
     .values({
       userId: req.user.id,
       name: parsed.data.name,
-      sql: parsed.data.sql,
+      erJson: parsed.data.erJson,
     })
     .returning();
 
@@ -65,19 +65,19 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const parsed = updateProjectSchema.safeParse(req.body);
-  if (!parsed.success || (!parsed.data.name && !parsed.data.sql)) {
+  const parsed = updateErProjectSchema.safeParse(req.body);
+  if (!parsed.success || (!parsed.data.name && !parsed.data.erJson)) {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
   const [updated] = await db
-    .update(projects)
+    .update(erProjects)
     .set({
       ...(parsed.data.name ? { name: parsed.data.name } : {}),
-      ...(parsed.data.sql ? { sql: parsed.data.sql } : {}),
+      ...(parsed.data.erJson ? { erJson: parsed.data.erJson } : {}),
       updatedAt: new Date(),
     })
-    .where(and(eq(projects.id, req.params.id), eq(projects.userId, req.user.id)))
+    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
     .returning();
 
   if (!updated) {
@@ -89,9 +89,9 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const [deleted] = await db
-    .delete(projects)
-    .where(and(eq(projects.id, req.params.id), eq(projects.userId, req.user.id)))
-    .returning({ id: projects.id });
+    .delete(erProjects)
+    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
+    .returning({ id: erProjects.id });
 
   if (!deleted) {
     return res.status(404).json({ message: "Project not found" });

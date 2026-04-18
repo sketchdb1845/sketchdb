@@ -41,19 +41,18 @@ const Home = () => {
             <p className="font-sans-claude text-[30px] uppercase font-bold text-[#c96442]">
               SketchDB
             </p>
-           
           </div>
 
           <div className="hidden items-center gap-2 sm:flex">
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/diagrams-dashboard")}
               className="rounded-full border border-[#e8e6dc] bg-white px-4 py-2 text-sm font-medium text-[#4d4c48] transition hover:border-[#d1cfc5] hover:bg-[#faf9f5]"
             >
               Projects
             </button>
             {profileName ? (
               <button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/diagrams-dashboard")}
                 className="inline-flex items-center gap-2 rounded-full border border-[#e8e6dc] bg-white px-3 py-2 text-sm font-medium text-[#4d4c48] transition hover:border-[#d1cfc5] hover:bg-[#faf9f5]"
                 title="Open your dashboard"
               >
@@ -80,7 +79,9 @@ const Home = () => {
                 Design your database like a published page.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-[#5e5d59] sm:text-xl">
-                SketchDB turns schema planning into a calmer workflow: create tables, assign relationships, and store SQL projects per user with a warm, editorial interface.
+                SketchDB turns schema planning into a calmer workflow: create
+                tables, assign relationships, and store SQL projects per user
+                with a warm, editorial interface.
               </p>
             </div>
 
@@ -97,6 +98,12 @@ const Home = () => {
               >
                 Open playground
               </button>
+              <button
+                onClick={() => navigate("/whiteboard")}
+                className="rounded-full border border-[#e8e6dc] bg-white px-6 py-3.5 text-sm font-semibold text-[#4d4c48] transition hover:border-[#d1cfc5] hover:bg-[#faf9f5]"
+              >
+                Open WhiteBoard
+              </button>
             </div>
           </div>
 
@@ -108,21 +115,30 @@ const Home = () => {
               <div className="rounded-[1.5rem] border border-[#f0eee6] bg-[#f5f4ed] p-4">
                 <div className="flex items-center justify-between border-b border-[#e8e6dc] pb-3">
                   <div>
-                    <p className="font-sans-claude text-2xl text-[#1F1F1E]">Project Journal</p>
-                    <p className="text-sm text-[#87867f]">A calm snapshot of your latest schema</p>
+                    <p className="font-sans-claude text-2xl text-[#1F1F1E]">
+                      Project Journal
+                    </p>
+                    <p className="text-sm text-[#87867f]">
+                      A calm snapshot of your latest schema
+                    </p>
                   </div>
-                  <span className="rounded-full bg-[#e8e6dc] px-3 py-1 text-xs font-medium text-[#4d4c48]">Live</span>
+                  <span className="rounded-full bg-[#e8e6dc] px-3 py-1 text-xs font-medium text-[#4d4c48]">
+                    Live
+                  </span>
                 </div>
 
                 <div className="mt-4 grid gap-3">
-                      {[
-                        ["Customers", "6 attributes", "bg-[#c96442]"],
-                        ["Orders", "8 attributes", "bg-[#d97757]"],
-                        ["Payments", "5 attributes", "bg-[#5e5d59]"],
-                      ].map(([name, meta, dotClass]) => (
-                    <div key={name} className="flex items-center justify-between rounded-2xl border border-[#f0eee6] bg-white px-4 py-4">
+                  {[
+                    ["Customers", "6 attributes", "bg-[#c96442]"],
+                    ["Orders", "8 attributes", "bg-[#d97757]"],
+                    ["Payments", "5 attributes", "bg-[#5e5d59]"],
+                  ].map(([name, meta, dotClass]) => (
+                    <div
+                      key={name}
+                      className="flex items-center justify-between rounded-2xl border border-[#f0eee6] bg-white px-4 py-4"
+                    >
                       <div className="flex items-center gap-3">
-                            <span className={`h-3 w-3 rounded-full ${dotClass}`} />
+                        <span className={`h-3 w-3 rounded-full ${dotClass}`} />
                         <div>
                           <p className="font-medium text-[#1F1F1E]">{name}</p>
                           <p className="text-sm text-[#87867f]">{meta}</p>
@@ -134,9 +150,12 @@ const Home = () => {
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-[#e8e6dc] bg-[#1F1F1E] p-4 text-[#faf9f5]">
-                  <p className="font-sans-claude text-2xl leading-none">Design notes</p>
+                  <p className="font-sans-claude text-2xl leading-none">
+                    Design notes
+                  </p>
                   <p className="mt-2 text-sm leading-6 text-[#b0aea5]">
-                    Create a table, choose a color once, and carry that visual identity through the canvas.
+                    Create a table, choose a color once, and carry that visual
+                    identity through the canvas.
                   </p>
                 </div>
               </div>

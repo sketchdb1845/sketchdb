@@ -30,7 +30,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
           </div>
-          <h1 className="mt-3 capitalize truncate font-serif-claude text-2xl leading-none text-[#faf9f5] sm:text-2xl">
+          <h1 className="capitalize truncate font-serif-claude text-2xl leading-none text-[#faf9f5] sm:text-2xl">
             {projectTitle}
           </h1>
         </div>

@@ -6,6 +6,9 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import { getAppSession } from "./lib/authClient";
 import { Navigate } from "react-router-dom";
+import WhiteBoard from "./pages/WhiteBoard";
+import DiagramDashboard from "./pages/DiagramDashboard";
+import ErDashboard from "./pages/ErDashboard";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "allowed" | "blocked">("loading");
@@ -32,7 +35,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => {
   return (
-    <div className="bg-[#ad9f9f] w-screen min-h-screen overflow-hidden">
+    <div className="bg-[#F5F4ED] w-screen min-h-screen overflow-hidden">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<Auth />} />
@@ -40,7 +43,31 @@ const App = () => {
           path="/dashboard"
           element={
             <ProtectedRoute>
+              <Navigate to="/diagrams-dashboard" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/diagrams-dashboard"
+          element={
+            <ProtectedRoute>
+              <DiagramDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/schema-dashboard"
+          element={
+            <ProtectedRoute>
               <DashBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/er-dashboard"
+          element={
+            <ProtectedRoute>
+              <ErDashboard />
             </ProtectedRoute>
           }
         />
@@ -49,6 +76,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <CanvasPlayground />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/whiteboard"
+          element={
+            <ProtectedRoute>
+              <WhiteBoard />
             </ProtectedRoute>
           }
         />

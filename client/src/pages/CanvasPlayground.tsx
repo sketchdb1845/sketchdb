@@ -47,7 +47,7 @@ import { parseSQLSchema } from "../utils/sqlParser";
 import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
 import { useErrorHandler } from "../utils/errorHandler";
 import { getAppSession } from "../lib/authClient";
-import { createProject, getProjectById, updateProject } from "../lib/projectsApi";
+import { createSqlProject, getSqlProjectById, updateSqlProject } from "../lib/projectsApi";
 
 // Node types configuration
 const nodeTypes: NodeTypes = {
@@ -148,7 +148,7 @@ export default function CanvasPlayground() {
         }
 
         setLoadingDialogOpen(true);
-        const response = await getProjectById(projectId);
+        const response = await getSqlProjectById(projectId);
         setProjectName(response.project.name);
 
         const { nodes: parsedNodes, edges: parsedEdges } = parseSQLSchema(response.project.sql);
@@ -337,7 +337,7 @@ export default function CanvasPlayground() {
       const sql = generateSQL(nodes);
 
       if (projectId) {
-        await updateProject(projectId, { sql });
+        await updateSqlProject(projectId, { sql });
         setProjectNotice({
           title: "Project saved",
           message: "Your SQL schema has been updated and is now stored in your library.",
@@ -359,7 +359,7 @@ export default function CanvasPlayground() {
           throw new Error("Project name is required.");
         }
 
-        const response = await createProject(name.trim(), pendingProjectSql);
+        const response = await createSqlProject(name.trim(), pendingProjectSql);
         setProjectName(response.project.name);
         setSearchParams({ projectId: response.project.id });
         setProjectNotice({
@@ -446,11 +446,11 @@ export default function CanvasPlayground() {
           onExportPNG={handleExportPNG}
           onExportPDF={handleExportPDF}
           onSaveProject={handleSaveProject}
-          onGoToProjects={() => navigate("/dashboard")}
+          onGoToProjects={() => navigate("/schema-dashboard")}
         />
 
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,100,66,0.1),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
 
           {/* Loading Dialog */}
           <LoadingDialog
