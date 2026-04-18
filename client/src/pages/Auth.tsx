@@ -29,7 +29,7 @@ export default function Auth() {
     const restore = async () => {
       const session = await getAppSession();
       if (session.user) {
-        navigate("/dashboard");
+        navigate("/diagrams-dashboard");
       }
     };
 
@@ -63,7 +63,7 @@ export default function Auth() {
     if (!session.user) {
       throw new Error("Session could not be established. Please try again.");
     }
-    navigate("/dashboard");
+    navigate("/diagrams-dashboard");
   };
 
   const onSignIn = async () => {
@@ -77,7 +77,7 @@ export default function Auth() {
     if (!session.user) {
       throw new Error("Session could not be established. Please try again.");
     }
-    navigate("/dashboard");
+    navigate("/diagrams-dashboard");
   };
 
   const onForgotPassword = async () => {

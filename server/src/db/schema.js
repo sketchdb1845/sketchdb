@@ -1,6 +1,5 @@
 import {
   boolean,
-  integer,
   pgTable,
   text,
   timestamp,
@@ -62,7 +61,7 @@ export const verifications = pgTable("verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
-export const projects = pgTable("projects", {
+export const sqlProjects = pgTable("sql_projects", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -75,5 +74,19 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-  version: integer("version").notNull().default(1),
+});
+
+export const erProjects = pgTable("er_projects", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 150 }).notNull(),
+  erJson: text("er_json").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });

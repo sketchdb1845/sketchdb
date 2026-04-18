@@ -3,7 +3,9 @@ import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
-import projectsRouter from "./routes/projects.js";
+import sqlProjectsRouter from "./routes/sqlProjects.js";
+import erProjectsRouter from "./routes/erProjects.js";
+import { sql as dbSql } from "./db/client.js";
 import { auth } from "./lib/auth.js";
 import { arcjetMiddleware } from "./middleware/arcjet.js";
 import { requireJwtAuth } from "./middleware/jwtAuth.js";
@@ -127,12 +129,85 @@ app.use("/api/auth", async (req, res, next) => {
   return arcjetMiddleware(req, res, () => toNodeHandler(auth)(req, res, next));
 });
 
-app.use("/api/projects", requireJwtAuth, arcjetMiddleware, projectsRouter);
+app.use("/api/sql-projects", requireJwtAuth, arcjetMiddleware, sqlProjectsRouter);
+app.use("/api/er-projects", requireJwtAuth, arcjetMiddleware, erProjectsRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ message: "Internal server error" });
 });
+
+const ensureProjectTables = async () => {
+  const existingProjectTables = await dbSql`
+    select table_name
+    from information_schema.tables
+    where table_schema = current_schema()
+      and table_name in ('sql_projects', 'er_projects')
+  `;
+
+  const tableNames = new Set(existingProjectTables.map((row) => row.table_name));
+
+  if (!tableNames.has("sql_projects")) {
+    await dbSql`
+      create table sql_projects (
+        id uuid primary key default gen_random_uuid(),
+        user_id text not null references "user"(id) on delete cascade,
+        name varchar(150) not null,
+        sql text not null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+  }
+
+  if (!tableNames.has("er_projects")) {
+    await dbSql`
+      create table er_projects (
+        id uuid primary key default gen_random_uuid(),
+        user_id text not null references "user"(id) on delete cascade,
+        name varchar(150) not null,
+        er_json text not null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+  }
+
+  const legacyProjectsExists = await dbSql`
+    select exists (
+      select 1
+      from information_schema.tables
+      where table_schema = current_schema()
+        and table_name = 'projects'
+    ) as exists
+  `;
+
+  if (!legacyProjectsExists[0]?.exists) {
+    return;
+  }
+
+  await dbSql`
+    insert into sql_projects (id, user_id, name, sql, created_at, updated_at)
+    select id, user_id, name, sql, created_at, updated_at
+    from projects
+    where coalesce(project_type, 'sql') = 'sql'
+      and sql is not null
+      and btrim(sql) <> ''
+    on conflict (id) do nothing
+  `;
+
+  await dbSql`
+    insert into er_projects (id, user_id, name, er_json, created_at, updated_at)
+    select id, user_id, name, er_json, created_at, updated_at
+    from projects
+    where coalesce(project_type, 'sql') = 'er'
+      and er_json is not null
+      and btrim(er_json) <> ''
+    on conflict (id) do nothing
+  `;
+};
+
+await ensureProjectTables();
 
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);

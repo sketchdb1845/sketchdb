@@ -1,9 +1,17 @@
 import { appApiBaseUrl } from "./authClient";
 
-export interface Project {
+export interface SqlProject {
   id: string;
   name: string;
   sql: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ErProject {
+  id: string;
+  name: string;
+  erJson: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,30 +38,58 @@ async function request<T>(path: string, options: RequestInit = {}) {
   return (await response.json()) as T;
 }
 
-export async function getProjects() {
-  return request<{ projects: Project[] }>("/api/projects");
+export async function getSqlProjects() {
+  return request<{ projects: SqlProject[] }>("/api/sql-projects");
 }
 
-export async function getProjectById(id: string) {
-  return request<{ project: Project }>(`/api/projects/${id}`);
+export async function getSqlProjectById(id: string) {
+  return request<{ project: SqlProject }>(`/api/sql-projects/${id}`);
 }
 
-export async function createProject(name: string, sql: string) {
-  return request<{ project: Project }>("/api/projects", {
+export async function createSqlProject(name: string, sql: string) {
+  return request<{ project: SqlProject }>("/api/sql-projects", {
     method: "POST",
     body: JSON.stringify({ name, sql }),
   });
 }
 
-export async function updateProject(id: string, data: Partial<Pick<Project, "name" | "sql">>) {
-  return request<{ project: Project }>(`/api/projects/${id}`, {
+export async function updateSqlProject(id: string, data: Partial<Pick<SqlProject, "name" | "sql">>) {
+  return request<{ project: SqlProject }>(`/api/sql-projects/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
-export async function deleteProject(id: string) {
-  return request<null>(`/api/projects/${id}`, {
+export async function deleteSqlProject(id: string) {
+  return request<null>(`/api/sql-projects/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getErProjects() {
+  return request<{ projects: ErProject[] }>("/api/er-projects");
+}
+
+export async function getErProjectById(id: string) {
+  return request<{ project: ErProject }>(`/api/er-projects/${id}`);
+}
+
+export async function createErProject(name: string, erJson: string) {
+  return request<{ project: ErProject }>("/api/er-projects", {
+    method: "POST",
+    body: JSON.stringify({ name, erJson }),
+  });
+}
+
+export async function updateErProject(id: string, data: Partial<Pick<ErProject, "name" | "erJson">>) {
+  return request<{ project: ErProject }>(`/api/er-projects/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteErProject(id: string) {
+  return request<null>(`/api/er-projects/${id}`, {
     method: "DELETE",
   });
 }
