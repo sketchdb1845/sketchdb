@@ -119,8 +119,7 @@ const WhiteBoard = () => {
   const [sceneKey, setSceneKey] = useState("whiteboard-blank");
   const [projectName, setProjectName] = useState("Untitled ER diagram");
   const [savedProjectName, setSavedProjectName] = useState("Untitled ER diagram");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -146,14 +145,12 @@ const WhiteBoard = () => {
         setSavedProjectName("Untitled ER diagram");
         setSceneData(blankScene);
         setSceneKey("whiteboard-blank");
-        setStatusMessage("");
-        setErrorMessage("");
+
         return;
       }
 
       setIsLoadingProject(true);
-      setErrorMessage("");
-      setStatusMessage("Loading project...");
+
 
       try {
         const response = await getErProjectById(projectId);
@@ -178,11 +175,9 @@ const WhiteBoard = () => {
   setSavedProjectName(project.name);
         setSceneData(normalizedScene);
         setSceneKey(`whiteboard-${project.id}`);
-        setStatusMessage("Project loaded");
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(error instanceof Error ? error.message : "Failed to load project");
-          setStatusMessage("");
+          setProjectName("Untitled ER diagram");
         }
       } finally {
         if (!cancelled) {
@@ -243,7 +238,6 @@ const WhiteBoard = () => {
 
     if (!trimmedName) {
       setProjectName(savedProjectName);
-      setErrorMessage("Project name is required");
       return;
     }
 
@@ -258,21 +252,17 @@ const WhiteBoard = () => {
     }
 
     try {
-      setErrorMessage("");
       const response = await updateErProject(projectId, { name: trimmedName });
       setProjectName(response.project.name);
       setSavedProjectName(response.project.name);
-      setStatusMessage("Project name updated");
     } catch (error) {
       setProjectName(savedProjectName);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to update project name");
     }
   };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      setErrorMessage("");
 
       const scene = getSerializedScene();
       const nextScene = {
@@ -298,10 +288,8 @@ const WhiteBoard = () => {
 
       setSceneData(nextScene);
       setSceneKey(projectId ? `whiteboard-${projectId}` : `whiteboard-new-${Date.now()}`);
-      setStatusMessage("Saved to library");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to save project");
-      setStatusMessage("");
+      console.log(error);
     } finally {
       setIsSaving(false);
     }
@@ -310,9 +298,6 @@ const WhiteBoard = () => {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      setErrorMessage("");
-      setStatusMessage("Preparing export...");
-
       const scene = getSerializedScene();
       const exportName = fileNameBase;
 
@@ -333,10 +318,8 @@ const WhiteBoard = () => {
       });
 
       downloadBlob(pngBlob, `${exportName}.png`);
-      setStatusMessage("Exported PNG and JSON");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to export project");
-      setStatusMessage("");
+      console.log(error);
     } finally {
       setIsExporting(false);
     }
@@ -513,10 +496,6 @@ const WhiteBoard = () => {
             </button>
           </div>
 
-          {/* <div className="mt-4 space-y-2 text-sm text-[#5e5d59]">
-            {statusMessage && <p>{statusMessage}</p>}
-            {errorMessage && <p className="rounded-2xl border border-[#f1c7c7] bg-[#fdf4f4] px-3 py-2 text-[#b53333]">{errorMessage}</p>}
-          </div> */}
         </section>
       </aside>
 
