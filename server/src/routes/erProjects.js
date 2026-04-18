@@ -1,8 +1,12 @@
 import express from "express";
-import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "../db/client.js";
-import { erProjects } from "../db/schema.js";
+import {
+  createErProject,
+  deleteErProject,
+  getErProjectById,
+  listErProjects,
+  updateErProject,
+} from "../controllers/erProjects.controller.js";
 
 const router = express.Router();
 
@@ -17,33 +21,18 @@ const updateErProjectSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const rows = await db
-    .select({
-      id: erProjects.id,
-      name: erProjects.name,
-      erJson: erProjects.erJson,
-      createdAt: erProjects.createdAt,
-      updatedAt: erProjects.updatedAt,
-    })
-    .from(erProjects)
-    .where(eq(erProjects.userId, req.user.id))
-    .orderBy(desc(erProjects.updatedAt));
-
-  return res.json({ projects: rows });
+  const projects = await listErProjects(req.user.id);
+  return res.json({ projects });
 });
 
 router.get("/:id", async (req, res) => {
-  const rows = await db
-    .select()
-    .from(erProjects)
-    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
-    .limit(1);
+  const project = await getErProjectById(req.user.id, req.params.id);
 
-  if (!rows[0]) {
+  if (!project) {
     return res.status(404).json({ message: "Project not found" });
   }
 
-  return res.json({ project: rows[0] });
+  return res.json({ project });
 });
 
 router.post("/", async (req, res) => {
@@ -52,14 +41,7 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
-  const [created] = await db
-    .insert(erProjects)
-    .values({
-      userId: req.user.id,
-      name: parsed.data.name,
-      erJson: parsed.data.erJson,
-    })
-    .returning();
+  const created = await createErProject(req.user.id, parsed.data.name, parsed.data.erJson);
 
   return res.status(201).json({ project: created });
 });
@@ -70,15 +52,10 @@ router.put("/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
-  const [updated] = await db
-    .update(erProjects)
-    .set({
-      ...(parsed.data.name ? { name: parsed.data.name } : {}),
-      ...(parsed.data.erJson ? { erJson: parsed.data.erJson } : {}),
-      updatedAt: new Date(),
-    })
-    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
-    .returning();
+  const updated = await updateErProject(req.user.id, req.params.id, {
+    ...(parsed.data.name ? { name: parsed.data.name } : {}),
+    ...(parsed.data.erJson ? { erJson: parsed.data.erJson } : {}),
+  });
 
   if (!updated) {
     return res.status(404).json({ message: "Project not found" });
@@ -88,10 +65,7 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const [deleted] = await db
-    .delete(erProjects)
-    .where(and(eq(erProjects.id, req.params.id), eq(erProjects.userId, req.user.id)))
-    .returning({ id: erProjects.id });
+  const deleted = await deleteErProject(req.user.id, req.params.id);
 
   if (!deleted) {
     return res.status(404).json({ message: "Project not found" });
