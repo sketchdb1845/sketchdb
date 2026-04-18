@@ -1,8 +1,12 @@
 import express from "express";
-import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "../db/client.js";
-import { sqlProjects } from "../db/schema.js";
+import {
+  createSqlProject,
+  deleteSqlProject,
+  getSqlProjectById,
+  listSqlProjects,
+  updateSqlProject,
+} from "../controllers/sqlProjects.controller.js";
 
 const router = express.Router();
 
@@ -17,33 +21,18 @@ const updateSqlProjectSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const rows = await db
-    .select({
-      id: sqlProjects.id,
-      name: sqlProjects.name,
-      sql: sqlProjects.sql,
-      createdAt: sqlProjects.createdAt,
-      updatedAt: sqlProjects.updatedAt,
-    })
-    .from(sqlProjects)
-    .where(eq(sqlProjects.userId, req.user.id))
-    .orderBy(desc(sqlProjects.updatedAt));
-
-  return res.json({ projects: rows });
+  const projects = await listSqlProjects(req.user.id);
+  return res.json({ projects });
 });
 
 router.get("/:id", async (req, res) => {
-  const rows = await db
-    .select()
-    .from(sqlProjects)
-    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
-    .limit(1);
+  const project = await getSqlProjectById(req.user.id, req.params.id);
 
-  if (!rows[0]) {
+  if (!project) {
     return res.status(404).json({ message: "Project not found" });
   }
 
-  return res.json({ project: rows[0] });
+  return res.json({ project });
 });
 
 router.post("/", async (req, res) => {
@@ -52,14 +41,7 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
-  const [created] = await db
-    .insert(sqlProjects)
-    .values({
-      userId: req.user.id,
-      name: parsed.data.name,
-      sql: parsed.data.sql,
-    })
-    .returning();
+  const created = await createSqlProject(req.user.id, parsed.data.name, parsed.data.sql);
 
   return res.status(201).json({ project: created });
 });
@@ -70,15 +52,10 @@ router.put("/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
-  const [updated] = await db
-    .update(sqlProjects)
-    .set({
-      ...(parsed.data.name ? { name: parsed.data.name } : {}),
-      ...(parsed.data.sql ? { sql: parsed.data.sql } : {}),
-      updatedAt: new Date(),
-    })
-    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
-    .returning();
+  const updated = await updateSqlProject(req.user.id, req.params.id, {
+    ...(parsed.data.name ? { name: parsed.data.name } : {}),
+    ...(parsed.data.sql ? { sql: parsed.data.sql } : {}),
+  });
 
   if (!updated) {
     return res.status(404).json({ message: "Project not found" });
@@ -88,10 +65,7 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const [deleted] = await db
-    .delete(sqlProjects)
-    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
-    .returning({ id: sqlProjects.id });
+  const deleted = await deleteSqlProject(req.user.id, req.params.id);
 
   if (!deleted) {
     return res.status(404).json({ message: "Project not found" });
