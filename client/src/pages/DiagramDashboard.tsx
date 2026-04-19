@@ -30,12 +30,20 @@ const DiagramDashboard = () => {
             </p>
           </div>
 
-          <button
-            onClick={handleSignOut}
-            className="rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
-          >
-            Sign out
-          </button>
+          <div className="flex flex-row gap-2">
+            <button
+              onClick={() => navigate("/")}
+              className="rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
+            >
+              Home
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="rounded-full border border-[#e8e6dc] bg-white px-5 py-3 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed]"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
