@@ -35,7 +35,10 @@ const ErDashboard = () => {
     const end = Math.min(totalPages, start + maxVisible - 1);
     const adjustedStart = Math.max(1, end - maxVisible + 1);
 
-    return Array.from({ length: end - adjustedStart + 1 }, (_, idx) => adjustedStart + idx);
+    return Array.from(
+      { length: end - adjustedStart + 1 },
+      (_, idx) => adjustedStart + idx,
+    );
   }, [currentPage, totalPages]);
 
   useEffect(() => {
@@ -50,7 +53,9 @@ const ErDashboard = () => {
         const response = await getErProjects();
         setProjects(response.projects);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load projects");
+        setError(
+          err instanceof Error ? err.message : "Failed to load projects",
+        );
       } finally {
         setLoading(false);
       }
@@ -99,6 +104,12 @@ const ErDashboard = () => {
 
             <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
               <button
+                onClick={() => navigate("/")}
+                className="rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
+              >
+                Home
+              </button>
+              <button
                 onClick={() => navigate("/whiteboard")}
                 className="rounded-full bg-[#c96442] px-5 py-3 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#b95d3c]"
               >
@@ -114,9 +125,15 @@ const ErDashboard = () => {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-[#5e5d59]">
-            <span className="rounded-full bg-[#e8e6dc] px-3 py-1.5">{projects.length} project{projects.length === 1 ? "" : "s"}</span>
-            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">ER projects only</span>
-            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">Per-user access</span>
+            <span className="rounded-full bg-[#e8e6dc] px-3 py-1.5">
+              {projects.length} project{projects.length === 1 ? "" : "s"}
+            </span>
+            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
+              ER projects only
+            </span>
+            <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
+              Per-user access
+            </span>
             {!loading && projects.length > 0 && (
               <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
                 Page {currentPage} of {totalPages}
@@ -124,14 +141,23 @@ const ErDashboard = () => {
             )}
           </div>
 
-          {loading && <p className="mt-6 text-[#5e5d59]">Loading projects...</p>}
-          {error && <p className="mt-6 rounded-2xl border border-[#f1c7c7] bg-[#fdf4f4] px-4 py-3 text-sm text-[#b53333]">{error}</p>}
+          {loading && (
+            <p className="mt-6 text-[#5e5d59]">Loading projects...</p>
+          )}
+          {error && (
+            <p className="mt-6 rounded-2xl border border-[#f1c7c7] bg-[#fdf4f4] px-4 py-3 text-sm text-[#b53333]">
+              {error}
+            </p>
+          )}
 
           {!loading && projects.length === 0 && (
             <div className="mt-6 rounded-[1.75rem] border border-dashed border-[#e8e6dc] bg-[#f5f4ed] p-8 text-center">
-              <p className="font-sans-claude text-3xl text-[#1F1F1E]">No ER projects yet</p>
+              <p className="font-sans-claude text-3xl text-[#1F1F1E]">
+                No ER projects yet
+              </p>
               <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-[#5e5d59]">
-                Start your first whiteboard and it will appear here in your ER library.
+                Start your first whiteboard and it will appear here in your ER
+                library.
               </p>
               <button
                 onClick={() => navigate("/whiteboard")}
@@ -144,14 +170,19 @@ const ErDashboard = () => {
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {paginatedProjects.map((project, index) => (
-              <div key={project.id} className="group rounded-[1.6rem] border border-[#e8e6dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(0,0,0,0.06)]">
+              <div
+                key={project.id}
+                className="group rounded-[1.6rem] border border-[#e8e6dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(0,0,0,0.06)]"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#f5f4ed] px-3 py-1 text-xs font-medium text-[#5e5d59]">
                       <span className="h-2 w-2 rounded-full bg-[#c96442]" />
                       Project {(currentPage - 1) * projectsPerPage + index + 1}
                     </div>
-                    <h2 className="font-sans-claude text-3xl leading-tight text-[#1F1F1E]">{project.name}</h2>
+                    <h2 className="font-sans-claude text-3xl leading-tight text-[#1F1F1E]">
+                      {project.name}
+                    </h2>
                     <p className="mt-2 text-sm text-[#87867f]">
                       Updated {new Date(project.updatedAt).toLocaleString()}
                     </p>
@@ -168,7 +199,9 @@ const ErDashboard = () => {
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
-                    onClick={() => navigate(`/whiteboard?projectId=${project.id}`)}
+                    onClick={() =>
+                      navigate(`/whiteboard?projectId=${project.id}`)
+                    }
                     className="rounded-full bg-[#1F1F1E] px-4 py-2.5 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
                   >
                     Open whiteboard
@@ -209,7 +242,9 @@ const ErDashboard = () => {
               ))}
 
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="rounded-full border border-[#e8e6dc] bg-white px-4 py-2 text-sm font-semibold text-[#4d4c48] transition hover:bg-[#f5f4ed] disabled:cursor-not-allowed disabled:opacity-50"
               >
