@@ -109,6 +109,40 @@ const createTextElement = (text: string, x: number, y: number) => ({
   lineHeight: 1.2,
 });
 
+const createLineElement = (fromX: number, fromY: number, toX: number, toY: number) => ({
+  id: `er-line-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+  type: "line",
+  x: Math.min(fromX, toX),
+  y: Math.min(fromY, toY),
+  width: Math.abs(toX - fromX),
+  height: Math.abs(toY - fromY),
+  angle: 0,
+  points: [[fromX < toX ? 0 : Math.abs(toX - fromX), fromY < toY ? 0 : Math.abs(toY - fromY)], [fromX < toX ? Math.abs(toX - fromX) : 0, fromY < toY ? Math.abs(toY - fromY) : 0]],
+  strokeColor: "#000",
+  backgroundColor: "transparent",
+  fillStyle: "hachure",
+  strokeWidth: 2,
+  strokeStyle: "solid" as const,
+  roughness: 1,
+  opacity: 100,
+  groupIds: [],
+  frameId: null,
+  roundness: null,
+  seed: randomSeed(),
+  version: 1,
+  versionNonce: randomSeed(),
+  isDeleted: false,
+  boundElements: null,
+  updated: Date.now(),
+  link: null,
+  locked: false,
+  lastCommittedPoint: null,
+  startBinding: null,
+  endBinding: null,
+  startArrowType: null,
+  endArrowType: null,
+});
+
 const WhiteBoard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -373,8 +407,8 @@ const WhiteBoard = () => {
     const parent = createBaseElement("ellipse", 260, 200, 200, 95);
     const childA = createBaseElement("ellipse", 120, 340, 150, 70);
     const childB = createBaseElement("ellipse", 320, 340, 150, 70);
-    const linkA = createBaseElement("line", 258, 294, -65, 55);
-    const linkB = createBaseElement("line", 400, 294, -5, 55);
+    const linkA = createLineElement(305, 295, 193, 340);
+    const linkB = createLineElement(305, 295, 395, 340);
 
     addPreset([
       parent,
