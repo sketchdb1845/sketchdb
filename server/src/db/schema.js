@@ -90,3 +90,40 @@ export const erProjects = pgTable("er_projects", {
     .notNull()
     .defaultNow(),
 });
+
+export const projectCollaborators = pgTable("project_collaborators", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectType: varchar("project_type", { length: 16 }).notNull(),
+  projectId: uuid("project_id").notNull(),
+  ownerUserId: text("owner_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  collaboratorUserId: text("collaborator_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  collaboratorEmail: varchar("collaborator_email", { length: 320 }).notNull(),
+  permission: varchar("permission", { length: 16 }).notNull().default("can_view"),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const projectShares = pgTable("project_shares", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectType: varchar("project_type", { length: 16 }).notNull(),
+  projectId: uuid("project_id").notNull(),
+  ownerUserId: text("owner_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  publicAccess: varchar("public_access", { length: 16 }).notNull().default("private"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

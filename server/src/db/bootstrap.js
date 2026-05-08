@@ -5,7 +5,7 @@ export const ensureProjectTables = async () => {
     select table_name
     from information_schema.tables
     where table_schema = current_schema()
-      and table_name in ('sql_projects', 'er_projects')
+      and table_name in ('sql_projects', 'er_projects', 'project_collaborators', 'project_shares')
   `;
 
   const tableNames = new Set(existingProjectTables.map((row) => row.table_name));
@@ -30,6 +30,37 @@ export const ensureProjectTables = async () => {
         user_id text not null references "user"(id) on delete cascade,
         name varchar(150) not null,
         er_json text not null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+  }
+
+  if (!tableNames.has("project_collaborators")) {
+    await dbSql`
+      create table project_collaborators (
+        id uuid primary key default gen_random_uuid(),
+        project_type varchar(16) not null,
+        project_id uuid not null,
+        owner_user_id text not null references "user"(id) on delete cascade,
+        collaborator_user_id text references "user"(id) on delete set null,
+        collaborator_email varchar(320) not null,
+        permission varchar(16) not null default 'can_view',
+        status varchar(16) not null default 'pending',
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    `;
+  }
+
+  if (!tableNames.has("project_shares")) {
+    await dbSql`
+      create table project_shares (
+        id uuid primary key default gen_random_uuid(),
+        project_type varchar(16) not null,
+        project_id uuid not null,
+        owner_user_id text not null references "user"(id) on delete cascade,
+        public_access varchar(16) not null default 'private',
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       )

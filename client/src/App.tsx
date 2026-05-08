@@ -73,19 +73,11 @@ const App = () => {
         />
         <Route
           path="/playground"
-          element={
-            <ProtectedRoute>
-              <CanvasPlayground />
-            </ProtectedRoute>
-          }
+          element={<CanvasPlayground />}
         />
         <Route
           path="/whiteboard"
-          element={
-            <ProtectedRoute>
-              <WhiteBoard />
-            </ProtectedRoute>
-          }
+          element={<WhiteBoard />}
         />
       </Routes>
     </div>

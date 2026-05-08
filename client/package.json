@@ -26,7 +26,9 @@
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.3",
     "reactflow": "^11.11.4",
-    "tailwindcss": "^4.1.14"
+    "socket.io-client": "^4.8.3",
+    "tailwindcss": "^4.1.14",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

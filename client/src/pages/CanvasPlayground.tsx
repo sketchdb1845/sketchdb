@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   addEdge,
@@ -31,6 +31,7 @@ import {
   ProjectNameDialog,
   NoticeDialog,
   CustomEdge,
+  CollaborationPanel,
 } from "../components";
 
 // Hooks
@@ -47,7 +48,17 @@ import { parseSQLSchema } from "../utils/sqlParser";
 import { exportCanvasAsPNG, exportCanvasAsPDF } from "../utils/canvasExport";
 import { useErrorHandler } from "../utils/errorHandler";
 import { getAppSession } from "../lib/authClient";
-import { createSqlProject, getSqlProjectById, updateSqlProject } from "../lib/projectsApi";
+import {
+  addSqlCollaborator,
+  createSqlProject,
+  getPublicSqlProjectById,
+  getSqlCollaboration,
+  removeSqlCollaborator,
+  updateSqlCollaborator,
+  updateSqlProject,
+  updateSqlPublicShare,
+} from "../lib/projectsApi";
+import { useYjsCollaboration } from "../hooks/useYjsCollaboration";
 
 // Node types configuration
 const nodeTypes: NodeTypes = {
@@ -83,6 +94,12 @@ export default function CanvasPlayground() {
   const [projectNameDialogOpen, setProjectNameDialogOpen] = useState(false);
   const [pendingProjectSql, setPendingProjectSql] = useState("");
   const [projectNotice, setProjectNotice] = useState<{ title: string; message: string } | null>(null);
+  const [sessionUser, setSessionUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [publicAccess, setPublicAccess] = useState<"private" | "view">("private");
+  const [accessMode, setAccessMode] = useState<"edit" | "view">("edit");
+  const [isOwner, setIsOwner] = useState(false);
+  const boardRef = useRef<HTMLDivElement | null>(null);
 
   // Table management hook
   const {
@@ -138,7 +155,8 @@ export default function CanvasPlayground() {
     const loadSessionAndProject = async () => {
       try {
         const session = await getAppSession();
-        if (!session.user) {
+        setSessionUser(session.user);
+        if (!session.user && !projectId) {
           navigate("/auth?mode=signin");
           return;
         }
@@ -148,12 +166,26 @@ export default function CanvasPlayground() {
         }
 
         setLoadingDialogOpen(true);
-        const response = await getSqlProjectById(projectId);
+        const response = await getPublicSqlProjectById(projectId);
         setProjectName(response.project.name);
+        setAccessMode(response.access || "edit");
 
         const { nodes: parsedNodes, edges: parsedEdges } = parseSQLSchema(response.project.sql);
         importNodes(parsedNodes);
         setEdges(parsedEdges);
+        if (session.user) {
+          try {
+            const settings = await getSqlCollaboration(projectId);
+            setCollaborators(settings.collaborators);
+            setPublicAccess(settings.publicAccess);
+            setIsOwner(settings.owner.email.toLowerCase() === session.user.email.toLowerCase());
+          } catch {
+            // Shared-link collaborators can open the project but cannot access owner-only settings.
+            setCollaborators([]);
+            setPublicAccess("private");
+            setIsOwner(false);
+          }
+        }
       } catch (error) {
         showError(error, "import");
       } finally {
@@ -163,6 +195,49 @@ export default function CanvasPlayground() {
 
     loadSessionAndProject();
   }, [projectId, importNodes, navigate, setEdges, showError]);
+
+  const collabState = useMemo(
+    () => JSON.stringify({ nodes, edges }),
+    [nodes, edges],
+  );
+
+  const { connected, presence, pushValue, sendCursor } = useYjsCollaboration({
+    projectType: "sql",
+    projectId,
+    canEdit: accessMode === "edit",
+    user: sessionUser,
+    onRemoteValue: (nextValue) => {
+      if (!nextValue) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(nextValue);
+        if (!parsed?.nodes || !parsed?.edges) {
+          return;
+        }
+        importNodes(parsed.nodes);
+        setEdges(parsed.edges);
+      } catch {
+        // ignore malformed remote state
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!projectId) {
+      return;
+    }
+    pushValue(collabState);
+  }, [collabState, projectId, pushValue]);
+
+  const handleBoardPointerMove = useCallback(
+    (event: any) => {
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      sendCursor(event.clientX - rect.left, event.clientY - rect.top);
+    },
+    [sendCursor],
+  );
 
   // Import schema functionality
   const importSchema = useCallback((sqlText: string) => {
@@ -335,6 +410,9 @@ export default function CanvasPlayground() {
       }
 
       const sql = generateSQL(nodes);
+      if (accessMode !== "edit") {
+        throw new Error("This project is view-only.");
+      }
 
       if (projectId) {
         await updateSqlProject(projectId, { sql });
@@ -350,7 +428,7 @@ export default function CanvasPlayground() {
     } catch (error) {
       showError(error, "export");
     }
-  }, [nodes, projectId, projectName, setSearchParams, showError]);
+  }, [accessMode, nodes, projectId, projectName, setSearchParams, showError]);
 
   const handleCreateProject = useCallback(
     async (name: string) => {
@@ -432,6 +510,35 @@ export default function CanvasPlayground() {
         onCancelAttrEdit={onCancelAttrEdit}
         onDeleteAttribute={onDeleteAttribute}
         getAvailableTables={getAvailableTables}
+        collaborationPanel={
+          projectId ? (
+            <CollaborationPanel
+              collaborators={collaborators}
+              isOwner={isOwner}
+              publicAccess={publicAccess}
+              shareUrl={`${window.location.origin}/playground?projectId=${projectId}`}
+              onAddCollaborator={async (email, permission) => {
+                await addSqlCollaborator(projectId, email, permission);
+                const settings = await getSqlCollaboration(projectId);
+                setCollaborators(settings.collaborators);
+              }}
+              onUpdateCollaborator={async (id, permission) => {
+                await updateSqlCollaborator(projectId, id, permission);
+                const settings = await getSqlCollaboration(projectId);
+                setCollaborators(settings.collaborators);
+              }}
+              onRemoveCollaborator={async (id) => {
+                await removeSqlCollaborator(projectId, id);
+                const settings = await getSqlCollaboration(projectId);
+                setCollaborators(settings.collaborators);
+              }}
+              onUpdatePublicAccess={async (next) => {
+                await updateSqlPublicShare(projectId, next);
+                setPublicAccess(next);
+              }}
+            />
+          ) : null
+        }
       />
 
       {/* Main Canvas Area */}
@@ -439,7 +546,7 @@ export default function CanvasPlayground() {
         <Toolbar
           projectTitle={projectId ? projectName || "Saved project" : projectName || "New project draft"}
           projectStatus={projectId ? "Loaded from library" : "Unsaved draft"}
-          projectDescription="Build the schema, assign a table color once, and store the SQL when you're ready."
+          projectDescription={connected ? "Live collaboration connected" : "Build the schema and save changes"}
           onAddTable={handleAddTable}
           onExportSQL={exportToSQL}
           onImportSchema={handleImportSchema}
@@ -512,6 +619,7 @@ export default function CanvasPlayground() {
           />
 
           {/* React Flow */}
+          <div ref={boardRef} className="h-full w-full" onMouseMove={handleBoardPointerMove}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -523,6 +631,10 @@ export default function CanvasPlayground() {
             onNodeClick={onNodeClick}
             isValidConnection={isValidConnection}
             fitView
+            nodesDraggable={accessMode === "edit"}
+            nodesConnectable={accessMode === "edit"}
+            elementsSelectable
+            panOnDrag
             connectionLineStyle={{ stroke: "#c96442", strokeWidth: 3 }}
             defaultEdgeOptions={{
               type: "customEdge",
@@ -536,6 +648,19 @@ export default function CanvasPlayground() {
             <Controls />
             <Background variant={BackgroundVariant.Dots} gap={22} size={4.2} color="rgba(255,255,255,0.12)" />
           </ReactFlow>
+          {presence.map((cursor) => (
+            <div
+              key={`${cursor.id}-${cursor.x}-${cursor.y}`}
+              className="pointer-events-none absolute z-20"
+              style={{ left: cursor.x, top: cursor.y }}
+            >
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cursor.color }} />
+              <div className="mt-1 rounded-md px-1.5 py-0.5 text-[10px] text-white" style={{ backgroundColor: cursor.color }}>
+                {cursor.name}
+              </div>
+            </div>
+          ))}
+          </div>
         </div>
       </div>
     </div>
