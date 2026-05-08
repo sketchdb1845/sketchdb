@@ -20,6 +20,8 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
     "postgres": "^3.4.7",
+    "socket.io": "^4.8.3",
+    "yjs": "^13.6.30",
     "zod": "^4.3.0"
   },
   "devDependencies": {

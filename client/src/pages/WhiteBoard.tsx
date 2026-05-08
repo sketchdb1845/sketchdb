@@ -1,9 +1,21 @@
 import { Excalidraw, exportToBlob, serializeAsJSON } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DatabaseBackup } from "lucide-react";
-import { createErProject, getErProjectById, updateErProject } from "../lib/projectsApi";
+import {
+  addErCollaborator,
+  createErProject,
+  getErCollaboration,
+  getPublicErProjectById,
+  removeErCollaborator,
+  updateErCollaborator,
+  updateErProject,
+  updateErPublicShare,
+} from "../lib/projectsApi";
+import { getAppSession } from "../lib/authClient";
+import { CollaborationPanel } from "../components";
+import { useYjsCollaboration } from "../hooks/useYjsCollaboration";
 
 type ExcalidrawApiLike = {
   getSceneElements: () => readonly any[];
@@ -19,6 +31,19 @@ type SerializedScene = {
   elements: any[];
   appState: Record<string, unknown>;
   files: any;
+};
+
+const sanitizeSceneAppState = (appState: unknown) => {
+  const nextAppState: Record<string, unknown> = {
+    ...blankScene.appState,
+    ...(appState && typeof appState === "object"
+      ? (appState as Record<string, unknown>)
+      : {}),
+  };
+
+  // Excalidraw expects collaborators as internal map-like state; plain objects from JSON break runtime.
+  delete (nextAppState as Record<string, unknown>).collaborators;
+  return nextAppState;
 };
 
 const randomSeed = () => Math.floor(Math.random() * 2147483647);
@@ -157,6 +182,16 @@ const WhiteBoard = () => {
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [publicAccess, setPublicAccess] = useState<"private" | "view">("private");
+  const [accessMode, setAccessMode] = useState<"edit" | "view">("edit");
+  const [isOwner, setIsOwner] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"shapes" | "collaborators">("shapes");
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const sceneDataRef = useRef<SerializedScene>(blankScene);
+  const lastAppliedRemoteRef = useRef("");
+  const lastPushedLocalRef = useRef("");
 
   const projectId = searchParams.get("projectId") || "";
 
@@ -174,7 +209,13 @@ const WhiteBoard = () => {
     let cancelled = false;
 
     const loadProject = async () => {
+      const session = await getAppSession();
+      setSessionUser(session.user);
       if (!projectId) {
+        if (!session.user) {
+          navigate("/auth?mode=signin");
+          return;
+        }
         setProjectName("Untitled ER diagram");
         setSavedProjectName("Untitled ER diagram");
         setSceneData(blankScene);
@@ -185,19 +226,16 @@ const WhiteBoard = () => {
 
       setIsLoadingProject(true);
 
-
       try {
-        const response = await getErProjectById(projectId);
+        const response = await getPublicErProjectById(projectId);
         const project = response.project;
+        setAccessMode(response.access || "edit");
 
         const parsedScene = project.erJson ? JSON.parse(project.erJson) : null;
         const normalizedScene: SerializedScene = parsedScene
           ? {
               elements: Array.isArray(parsedScene.elements) ? parsedScene.elements : [],
-              appState: {
-                ...blankScene.appState,
-                ...(parsedScene.appState || {}),
-              },
+              appState: sanitizeSceneAppState(parsedScene.appState || {}),
               files: parsedScene.files || {},
             }
           : blankScene;
@@ -208,7 +246,14 @@ const WhiteBoard = () => {
         setProjectName(project.name);
   setSavedProjectName(project.name);
         setSceneData(normalizedScene);
+        sceneDataRef.current = normalizedScene;
         setSceneKey(`whiteboard-${project.id}`);
+        if (session.user) {
+          const settings = await getErCollaboration(projectId);
+          setCollaborators(settings.collaborators);
+          setPublicAccess(settings.publicAccess);
+          setIsOwner(settings.owner.email.toLowerCase() === session.user.email.toLowerCase());
+        }
       } catch (error) {
         if (!cancelled) {
           setProjectName("Untitled ER diagram");
@@ -226,6 +271,40 @@ const WhiteBoard = () => {
       cancelled = true;
     };
   }, [navigate, projectId]);
+
+  const applyRemoteScene = useCallback((nextValue: string) => {
+    if (!nextValue || nextValue === lastAppliedRemoteRef.current) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(nextValue);
+      const normalized = {
+        elements: Array.isArray(parsed.elements) ? parsed.elements : [],
+        appState: sanitizeSceneAppState(parsed.appState || {}),
+        files: parsed.files || {},
+      };
+      lastAppliedRemoteRef.current = nextValue;
+      sceneDataRef.current = normalized;
+      if (excalidrawApi) {
+        excalidrawApi.updateScene({
+          elements: normalized.elements,
+          appState: normalized.appState,
+        });
+      } else {
+        setSceneData(normalized);
+      }
+    } catch {
+      // ignore malformed payload
+    }
+  }, [excalidrawApi]);
+
+  const { presence, pushValue, sendCursor } = useYjsCollaboration({
+    projectType: "er",
+    projectId,
+    canEdit: accessMode === "edit",
+    user: sessionUser,
+    onRemoteValue: applyRemoteScene,
+  });
 
   const addPreset = (elementsToAdd: any[]) => {
     if (!excalidrawApi) {
@@ -245,7 +324,7 @@ const WhiteBoard = () => {
 
     const elements = Array.from(excalidrawApi.getSceneElements() || []);
     const appState = {
-      ...excalidrawApi.getAppState(),
+      ...sanitizeSceneAppState(excalidrawApi.getAppState()),
       viewBackgroundColor: "transparent",
     };
     const files = excalidrawApi.getFiles() || {};
@@ -286,6 +365,9 @@ const WhiteBoard = () => {
     }
 
     try {
+      if (accessMode !== "edit") {
+        return;
+      }
       const response = await updateErProject(projectId, { name: trimmedName });
       setProjectName(response.project.name);
       setSavedProjectName(response.project.name);
@@ -307,6 +389,9 @@ const WhiteBoard = () => {
       const trimmedName = projectName.trim() || "Untitled ER diagram";
 
       if (projectId) {
+        if (accessMode !== "edit") {
+          throw new Error("This project is view-only.");
+        }
         const response = await updateErProject(projectId, {
           name: trimmedName,
           erJson: scene.serialized,
@@ -320,6 +405,7 @@ const WhiteBoard = () => {
         setProjectName(response.project.name);
       }
 
+      sceneDataRef.current = nextScene;
       setSceneData(nextScene);
       setSceneKey(projectId ? `whiteboard-${projectId}` : `whiteboard-new-${Date.now()}`);
     } catch (error) {
@@ -493,59 +579,161 @@ const WhiteBoard = () => {
           </div>
         </div>
 
-        <section className="rounded-[1.5rem] border border-[#e8e6dc] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-          <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">ER Presets</p>
-          <h2 className="mt-2 font-sans-claude text-3xl leading-none text-[#1F1F1E]">Shapes</h2>
-          <p className="mt-3 text-sm leading-6 text-[#5e5d59]">
-            Use starter blocks from the ER notation set, then connect and rename directly in canvas.
-          </p>
-
-          <div className="mt-4 grid gap-2">
-            <button onClick={placeEntity} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Entity (Rectangle)</button>
-            <button onClick={placeAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Attribute (Ellipse)</button>
-            <button onClick={placeRelationship} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Relationship (Diamond)</button>
-            <button onClick={placeWeakEntity} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Weak Entity (Double Rectangle)</button>
-            <button onClick={placeDerivedAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Derived Attribute (Dashed Ellipse)</button>
-            <button onClick={placeMultiValuedAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Multi-valued Attribute (Double Ellipse)</button>
-            <button onClick={placeCompositeAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Composite Attribute</button>
-          </div>
-
-          <div className="mt-5 flex items-center gap-2">
-            <button type="button" onClick={() => navigate("/er-dashboard")} className="rounded-full border border-[#e8e6dc] bg-white px-4 py-2 text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Back</button>
+        <div className="mb-4 rounded-2xl border border-[#e8e6dc] bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.04)]">
+          <div className="grid grid-cols-2 gap-1">
             <button
               type="button"
-              onClick={handleSave}
-              disabled={isLoadingProject || isSaving || isExporting}
-              className="rounded-full border border-[#e8e6dc] bg-[#B95D3C] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#30302e] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => setActiveSidebarTab("shapes")}
+              className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                activeSidebarTab === "shapes"
+                  ? "bg-[#B95D3C] text-[#faf9f5]"
+                  : "bg-transparent text-[#4d4c48] hover:bg-[#f5f4ed]"
+              }`}
             >
-              {isSaving ? "Saving..." : "Save"}
+              Shapes
             </button>
             <button
               type="button"
-              onClick={handleExport}
-              disabled={isLoadingProject || isSaving || isExporting}
-              className="rounded-full border border-[#e8e6dc] bg-[#B95D3C] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#30302e] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => setActiveSidebarTab("collaborators")}
+              className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                activeSidebarTab === "collaborators"
+                  ? "bg-[#B95D3C] text-[#faf9f5]"
+                  : "bg-transparent text-[#4d4c48] hover:bg-[#f5f4ed]"
+              }`}
             >
-              {isExporting ? "Exporting..." : "Export"}
+              Collaborators
             </button>
           </div>
+        </div>
 
-        </section>
+        {activeSidebarTab === "shapes" ? (
+          <section className="rounded-[1.5rem] border border-[#e8e6dc] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+            <p className="font-sans-claude text-[10px] uppercase tracking-[0.35em] text-[#87867f]">ER Presets</p>
+            <h2 className="mt-2 font-sans-claude text-3xl leading-none text-[#1F1F1E]">Shapes</h2>
+            <p className="mt-3 text-sm leading-6 text-[#5e5d59]">
+              Use starter blocks from the ER notation set, then connect and rename directly in canvas.
+            </p>
+
+            <div className="mt-4 grid gap-2">
+              <button onClick={placeEntity} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Entity (Rectangle)</button>
+              <button onClick={placeAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Attribute (Ellipse)</button>
+              <button onClick={placeRelationship} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Relationship (Diamond)</button>
+              <button onClick={placeWeakEntity} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Weak Entity (Double Rectangle)</button>
+              <button onClick={placeDerivedAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Derived Attribute (Dashed Ellipse)</button>
+              <button onClick={placeMultiValuedAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Multi-valued Attribute (Double Ellipse)</button>
+              <button onClick={placeCompositeAttribute} className="rounded-2xl border border-[#e8e6dc] bg-white px-3 py-2.5 text-left text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Composite Attribute</button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-2">
+              <button type="button" onClick={() => navigate("/er-dashboard")} className="rounded-full border border-[#e8e6dc] bg-white px-4 py-2 text-sm font-medium text-[#4d4c48] transition hover:bg-[#f5f4ed]">Back</button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isLoadingProject || isSaving || isExporting}
+                className="rounded-full border border-[#e8e6dc] bg-[#B95D3C] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#30302e] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isLoadingProject || isSaving || isExporting}
+                className="rounded-full border border-[#e8e6dc] bg-[#B95D3C] px-4 py-2 text-sm font-medium text-[#faf9f5] transition hover:bg-[#30302e] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isExporting ? "Exporting..." : "Export"}
+              </button>
+            </div>
+          </section>
+        ) : projectId && sessionUser ? (
+          <CollaborationPanel
+            collaborators={collaborators}
+            isOwner={isOwner}
+            publicAccess={publicAccess}
+            shareUrl={`${window.location.origin}/whiteboard?projectId=${projectId}`}
+            onAddCollaborator={async (email, permission) => {
+              await addErCollaborator(projectId, email, permission);
+              const settings = await getErCollaboration(projectId);
+              setCollaborators(settings.collaborators);
+            }}
+            onUpdateCollaborator={async (id, permission) => {
+              await updateErCollaborator(projectId, id, permission);
+              const settings = await getErCollaboration(projectId);
+              setCollaborators(settings.collaborators);
+            }}
+            onRemoveCollaborator={async (id) => {
+              await removeErCollaborator(projectId, id);
+              const settings = await getErCollaboration(projectId);
+              setCollaborators(settings.collaborators);
+            }}
+            onUpdatePublicAccess={async (next) => {
+              await updateErPublicShare(projectId, next);
+              setPublicAccess(next);
+            }}
+          />
+        ) : (
+          <div className="rounded-[1.5rem] border border-dashed border-[#e8e6dc] bg-white p-5 text-sm text-[#5e5d59]">
+            Save this ER project first to enable collaborator settings.
+          </div>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#1F1F1E]">
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_26%)]" />
 
-          <div className="canvas-board h-full w-full overflow-hidden">
+          <div
+            ref={boardRef}
+            className="canvas-board h-full w-full overflow-hidden"
+            onMouseMove={(event) => {
+              const rect = boardRef.current?.getBoundingClientRect();
+              if (!rect) return;
+              sendCursor(event.clientX - rect.left, event.clientY - rect.top);
+            }}
+          >
             <Excalidraw
               key={sceneKey}
               theme="dark"
               initialData={initialData}
+              viewModeEnabled={accessMode !== "edit"}
+              onChange={(elements, appState, files) => {
+                const nextScene = {
+                  elements: Array.from(elements || []),
+                  appState: {
+                    ...sanitizeSceneAppState(appState),
+                    viewBackgroundColor: "transparent",
+                  },
+                  files: files || {},
+                };
+                sceneDataRef.current = nextScene;
+                if (!projectId || accessMode !== "edit") {
+                  return;
+                }
+                const serialized = JSON.stringify(nextScene);
+                if (
+                  serialized === lastAppliedRemoteRef.current ||
+                  serialized === lastPushedLocalRef.current
+                ) {
+                  return;
+                }
+                lastPushedLocalRef.current = serialized;
+                pushValue(serialized);
+              }}
               excalidrawAPI={(api) =>
                 setExcalidrawApi(api as unknown as ExcalidrawApiLike)
               }
             />
+            {presence.map((cursor) => (
+              <div
+                key={`${cursor.id}-${cursor.x}-${cursor.y}`}
+                className="pointer-events-none absolute z-20"
+                style={{ left: cursor.x, top: cursor.y }}
+              >
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cursor.color }} />
+                <div className="mt-1 rounded-md px-1.5 py-0.5 text-[10px] text-white" style={{ backgroundColor: cursor.color }}>
+                  {cursor.name}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

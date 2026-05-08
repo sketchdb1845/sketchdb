@@ -2,17 +2,23 @@ import "dotenv/config";
 import { ensureProjectTables } from "./db/bootstrap.js";
 import cors from "cors";
 import express from "express";
+import http from "http";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
 import sqlProjectsRouter from "./routes/sqlProjects.js";
 import erProjectsRouter from "./routes/erProjects.js";
 import { arcjetMiddleware } from "./middleware/arcjet.js";
 import { requireJwtAuth } from "./middleware/jwtAuth.js";
+import { optionalJwtAuth } from "./middleware/optionalJwtAuth.js";
+import { getPublicSqlProject } from "./controllers/sqlProjects.controller.js";
+import { getPublicErProject } from "./controllers/erProjects.controller.js";
+import { attachCollaborationSocket } from "./lib/collaborationSocket.js";
 
 
 const port = Number(process.env.PORT || 4000);
 
 const app = express();
+const httpServer = http.createServer(app);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 app.use(
@@ -29,6 +35,8 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.get("/api/sql-projects/public/:id", optionalJwtAuth, getPublicSqlProject);
+app.get("/api/er-projects/public/:id", optionalJwtAuth, getPublicErProject);
 app.use("/api/sql-projects", requireJwtAuth, arcjetMiddleware, sqlProjectsRouter);
 app.use("/api/er-projects", requireJwtAuth, arcjetMiddleware, erProjectsRouter);
 
@@ -38,7 +46,8 @@ app.use((err, _req, res, _next) => {
 });
 
 await ensureProjectTables();
+attachCollaborationSocket(httpServer, clientOrigin);
 
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);
 });

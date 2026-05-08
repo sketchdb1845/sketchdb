@@ -1,4 +1,5 @@
 import type { Node } from "@xyflow/react";
+import type { ReactNode } from "react";
 import type { AttributeType, DataType, TableAttribute } from "../../types";
 
 export interface AvailableTableAttribute {
@@ -45,4 +46,5 @@ export interface SidebarProps {
   onCancelAttrEdit?: (idx: number) => void;
   onDeleteAttribute?: (idx: number) => void;
   getAvailableTables?: () => AvailableTable[];
+  collaborationPanel?: ReactNode;
 }

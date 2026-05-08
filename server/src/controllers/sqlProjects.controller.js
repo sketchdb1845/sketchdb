@@ -1,7 +1,14 @@
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client.js";
-import { sqlProjects } from "../db/schema.js";
+import { projectCollaborators, sqlProjects } from "../db/schema.js";
+import {
+  addCollaborator,
+  getPublicShare,
+  listCollaborators,
+  resolveProjectPermission,
+  upsertPublicShare,
+} from "../lib/collaboration.js";
 
 const createSqlProjectSchema = z.object({
   name: z.string().trim().min(1).max(150),
@@ -11,6 +18,19 @@ const createSqlProjectSchema = z.object({
 const updateSqlProjectSchema = z.object({
   name: z.string().trim().min(1).max(150).optional(),
   sql: z.string().trim().min(1).optional(),
+});
+
+const addCollaboratorSchema = z.object({
+  email: z.string().email(),
+  permission: z.enum(["can_view", "can_edit"]).default("can_edit"),
+});
+
+const updateCollaboratorSchema = z.object({
+  permission: z.enum(["can_view", "can_edit"]),
+});
+
+const updatePublicShareSchema = z.object({
+  publicAccess: z.enum(["private", "view"]),
 });
 
 export async function listSqlProjects(req, res) {
@@ -30,17 +50,32 @@ export async function listSqlProjects(req, res) {
 }
 
 export async function getSqlProject(req, res) {
-  const rows = await db
-    .select()
-    .from(sqlProjects)
-    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
-    .limit(1);
+  const rows = await db.select().from(sqlProjects).where(eq(sqlProjects.id, req.params.id)).limit(1);
+  const project = rows[0];
+  if (!project) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+  const permission = await resolveProjectPermission("sql", project, req.user);
+  if (permission.access === "none") {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
 
-  if (!rows[0]) {
+  return res.json({ project, access: permission.access });
+}
+
+export async function getPublicSqlProject(req, res) {
+  const rows = await db.select().from(sqlProjects).where(eq(sqlProjects.id, req.params.id)).limit(1);
+  const project = rows[0];
+  if (!project) {
     return res.status(404).json({ message: "Project not found" });
   }
 
-  return res.json({ project: rows[0] });
+  const permission = await resolveProjectPermission("sql", project, req.user || null);
+  if (permission.access === "none") {
+    return res.status(403).json({ message: "This project is private" });
+  }
+
+  return res.json({ project, access: permission.access, isPublic: permission.isPublic });
 }
 
 export async function createSqlProject(req, res) {
@@ -67,6 +102,16 @@ export async function updateSqlProject(req, res) {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
+  const rows = await db.select().from(sqlProjects).where(eq(sqlProjects.id, req.params.id)).limit(1);
+  const project = rows[0];
+  if (!project) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+  const permission = await resolveProjectPermission("sql", project, req.user);
+  if (permission.access !== "edit") {
+    return res.status(403).json({ message: "You need Can Edit permission" });
+  }
+
   const [updated] = await db
     .update(sqlProjects)
     .set({
@@ -74,7 +119,7 @@ export async function updateSqlProject(req, res) {
       ...(parsed.data.sql ? { sql: parsed.data.sql } : {}),
       updatedAt: new Date(),
     })
-    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .where(eq(sqlProjects.id, req.params.id))
     .returning();
 
   if (!updated) {
@@ -95,4 +140,128 @@ export async function deleteSqlProject(req, res) {
   }
 
   return res.status(204).send();
+}
+
+export async function getSqlCollaboration(req, res) {
+  const rows = await db
+    .select()
+    .from(sqlProjects)
+    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .limit(1);
+  const project = rows[0];
+  if (!project) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const collaborators = await listCollaborators("sql", project.id);
+  const share = await getPublicShare("sql", project.id);
+  return res.json({
+    collaborators,
+    publicAccess: share?.publicAccess || "private",
+    owner: { email: req.user.email, name: req.user.name || null },
+  });
+}
+
+export async function addSqlCollaborator(req, res) {
+  const rows = await db
+    .select()
+    .from(sqlProjects)
+    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .limit(1);
+  const project = rows[0];
+  if (!project) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const parsed = addCollaboratorSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid payload" });
+  }
+  if (parsed.data.email.toLowerCase() === req.user.email.toLowerCase()) {
+    return res.status(400).json({ message: "Owner already has access" });
+  }
+
+  const collaborator = await addCollaborator("sql", project, parsed.data.email, parsed.data.permission);
+  return res.status(201).json({ collaborator });
+}
+
+export async function updateSqlCollaborator(req, res) {
+  const ownerRows = await db
+    .select()
+    .from(sqlProjects)
+    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .limit(1);
+  if (!ownerRows[0]) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const parsed = updateCollaboratorSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid payload" });
+  }
+
+  const [updated] = await db
+    .update(projectCollaborators)
+    .set({ permission: parsed.data.permission, updatedAt: new Date() })
+    .where(
+      and(
+        eq(projectCollaborators.id, req.params.collaboratorId),
+        eq(projectCollaborators.projectType, "sql"),
+        eq(projectCollaborators.projectId, req.params.id),
+      ),
+    )
+    .returning();
+
+  if (!updated) {
+    return res.status(404).json({ message: "Collaborator not found" });
+  }
+
+  return res.json({ collaborator: updated });
+}
+
+export async function removeSqlCollaborator(req, res) {
+  const ownerRows = await db
+    .select()
+    .from(sqlProjects)
+    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .limit(1);
+  if (!ownerRows[0]) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const [deleted] = await db
+    .delete(projectCollaborators)
+    .where(
+      and(
+        eq(projectCollaborators.id, req.params.collaboratorId),
+        eq(projectCollaborators.projectType, "sql"),
+        eq(projectCollaborators.projectId, req.params.id),
+      ),
+    )
+    .returning({ id: projectCollaborators.id });
+  if (!deleted) {
+    return res.status(404).json({ message: "Collaborator not found" });
+  }
+
+  return res.status(204).send();
+}
+
+export async function updateSqlPublicShare(req, res) {
+  const rows = await db
+    .select()
+    .from(sqlProjects)
+    .where(and(eq(sqlProjects.id, req.params.id), eq(sqlProjects.userId, req.user.id)))
+    .limit(1);
+  const project = rows[0];
+  if (!project) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const parsed = updatePublicShareSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid payload" });
+  }
+
+  const share = await upsertPublicShare("sql", project.id, req.user.id, parsed.data.publicAccess);
+  return res.json({ publicAccess: share.publicAccess });
 }
