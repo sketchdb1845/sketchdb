@@ -69,8 +69,14 @@ export function useYjsCollaboration({
     });
     socketRef.current = socket;
 
-    yText.observe(() => {
+    yText.observe((event) => {
       if (isApplyingRemote.current) {
+        return;
+      }
+      // Local `pushValue` updates must not call `onRemoteValue`: consumers re-import
+      // the full document (e.g. SQL canvas `importNodes` clears selection; Excalidraw
+      // would get an extra `updateScene`), which feels like the diagram resets.
+      if (event.transaction.local) {
         return;
       }
       onRemoteValueRef.current(yText.toString());

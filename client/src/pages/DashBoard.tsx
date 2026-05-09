@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authClient, getAppSession, logoutAppSession } from "../lib/authClient";
-import { deleteSqlProject, getSqlProjects } from "../lib/projectsApi";
-
-interface ProjectItem {
-  id: string;
-  name: string;
-  sql: string;
-  updatedAt: string;
-}
+import {
+  deleteSqlProject,
+  getSqlProjects,
+  type SharedSqlProject,
+  type SqlProject,
+} from "../lib/projectsApi";
 
 const DashBoard = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [ownedProjects, setOwnedProjects] = useState<SqlProject[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<SharedSqlProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const projectsPerPage = 3;
 
-  const totalPages = Math.max(1, Math.ceil(projects.length / projectsPerPage));
+  const totalPages = Math.max(1, Math.ceil(ownedProjects.length / projectsPerPage));
 
   const paginatedProjects = useMemo(() => {
     const startIndex = (currentPage - 1) * projectsPerPage;
-    return projects.slice(startIndex, startIndex + projectsPerPage);
-  }, [projects, currentPage]);
+    return ownedProjects.slice(startIndex, startIndex + projectsPerPage);
+  }, [ownedProjects, currentPage]);
 
   const pageNumbers = useMemo(() => {
     const maxVisible = 5;
@@ -52,7 +51,8 @@ const DashBoard = () => {
         }
 
         const response = await getSqlProjects();
-        setProjects(response.projects);
+        setOwnedProjects(response.owned);
+        setSharedProjects(response.shared);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load projects",
@@ -74,7 +74,7 @@ const DashBoard = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteSqlProject(id);
-      setProjects((prev) => prev.filter((project) => project.id !== id));
+      setOwnedProjects((prev) => prev.filter((project) => project.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete project");
     }
@@ -99,7 +99,7 @@ const DashBoard = () => {
                 Saved diagrams, held together by SQL.
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-[#5e5d59] sm:text-lg">
-                Each project is private to your account
+                Your library lists projects you own and projects shared with you by email.
               </p>
             </div>
 
@@ -127,17 +127,17 @@ const DashBoard = () => {
 
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-[#5e5d59]">
             <span className="rounded-full bg-[#e8e6dc] px-3 py-1.5">
-              {projects.length} project{projects.length === 1 ? "" : "s"}
+              {ownedProjects.length} owned
             </span>
             <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
-              SQL projects only
+              {sharedProjects.length} shared
             </span>
             <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
-              Per-user access
+              SQL projects
             </span>
-            {!loading && projects.length > 0 && (
+            {!loading && ownedProjects.length > 0 && (
               <span className="rounded-full bg-[#f0eee6] px-3 py-1.5">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} of {totalPages} (owned)
               </span>
             )}
           </div>
@@ -151,7 +151,7 @@ const DashBoard = () => {
             </p>
           )}
 
-          {!loading && projects.length === 0 && (
+          {!loading && ownedProjects.length === 0 && sharedProjects.length === 0 && (
             <div className="mt-6 rounded-[1.75rem] border border-dashed border-[#e8e6dc] bg-[#f5f4ed] p-8 text-center">
               <p className="font-sans-claude text-3xl text-[#1F1F1E]">
                 Nothing here yet
@@ -169,7 +169,13 @@ const DashBoard = () => {
             </div>
           )}
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          {!loading && ownedProjects.length > 0 && (
+            <h2 className="mt-8 font-sans-claude text-2xl text-[#1F1F1E]">
+              Your projects
+            </h2>
+          )}
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {paginatedProjects.map((project, index) => (
               <div
                 key={project.id}
@@ -179,7 +185,7 @@ const DashBoard = () => {
                   <div>
                     <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#f5f4ed] px-3 py-1 text-xs font-medium text-[#5e5d59]">
                       <span className="h-2 w-2 rounded-full bg-[#c96442]" />
-                      Project {(currentPage - 1) * projectsPerPage + index + 1}
+                      Owned · {(currentPage - 1) * projectsPerPage + index + 1}
                     </div>
                     <h2 className="font-sans-claude text-3xl leading-tight text-[#1F1F1E]">
                       {project.name}
@@ -219,7 +225,64 @@ const DashBoard = () => {
             ))}
           </div>
 
-          {!loading && projects.length > projectsPerPage && (
+          {!loading && sharedProjects.length > 0 && (
+            <>
+              <h2 className="mt-10 font-sans-claude text-2xl text-[#1F1F1E]">
+                Shared with you
+              </h2>
+              <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {sharedProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="group rounded-[1.6rem] border border-[#e8e6dc] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(0,0,0,0.06)]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f4fc] px-3 py-1 text-xs font-medium text-[#1F1F1E]">
+                            <span className="h-2 w-2 rounded-full bg-[#2f80ed]" />
+                            Shared
+                          </span>
+                          <span className="rounded-full bg-[#f5f4ed] px-3 py-1 text-xs font-medium text-[#5e5d59]">
+                            {project.permission === "can_edit" ? "Can edit" : "View only"}
+                          </span>
+                        </div>
+                        <h2 className="font-sans-claude text-3xl leading-tight text-[#1F1F1E]">
+                          {project.name}
+                        </h2>
+                        <p className="mt-2 text-sm text-[#87867f]">
+                          From {project.ownerEmail} ·{" "}
+                          {new Date(project.updatedAt).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <span className="rounded-full border border-[#f0eee6] bg-[#faf9f5] px-3 py-1 text-xs font-medium text-[#4d4c48]">
+                        SQL
+                      </span>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-[#f0eee6] bg-[#f5f4ed] p-4 text-sm leading-6 text-[#5e5d59]">
+                      {project.sql.slice(0, 160)}
+                      {project.sql.length > 160 ? "..." : ""}
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <button
+                        onClick={() =>
+                          navigate(`/playground?projectId=${project.id}`)
+                        }
+                        className="rounded-full bg-[#1F1F1E] px-4 py-2.5 text-sm font-semibold text-[#faf9f5] transition hover:bg-[#30302e]"
+                      >
+                        Open diagram
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {!loading && ownedProjects.length > projectsPerPage && (
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2 border-t border-[#e8e6dc] pt-6">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}

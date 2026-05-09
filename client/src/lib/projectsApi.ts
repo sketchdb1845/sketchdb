@@ -16,6 +16,18 @@ export interface ErProject {
   updatedAt: string;
 }
 
+export interface SharedSqlProject extends SqlProject {
+  permission: "can_view" | "can_edit";
+  collaboratorStatus: "pending" | "accepted";
+  ownerEmail: string;
+}
+
+export interface SharedErProject extends ErProject {
+  permission: "can_view" | "can_edit";
+  collaboratorStatus: "pending" | "accepted";
+  ownerEmail: string;
+}
+
 export interface Collaborator {
   id: string;
   collaboratorUserId: string | null;
@@ -57,7 +69,7 @@ async function request<T>(path: string, options: RequestInit = {}) {
 }
 
 export async function getSqlProjects() {
-  return request<{ projects: SqlProject[] }>("/api/sql-projects");
+  return request<{ owned: SqlProject[]; shared: SharedSqlProject[] }>("/api/sql-projects");
 }
 
 export async function getSqlProjectById(id: string) {
@@ -124,7 +136,7 @@ export async function updateSqlPublicShare(id: string, publicAccess: "private" |
 }
 
 export async function getErProjects() {
-  return request<{ projects: ErProject[] }>("/api/er-projects");
+  return request<{ owned: ErProject[]; shared: SharedErProject[] }>("/api/er-projects");
 }
 
 export async function getErProjectById(id: string) {

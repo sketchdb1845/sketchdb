@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client.js";
-import { erProjects, projectCollaborators } from "../db/schema.js";
+import { erProjects, projectCollaborators, users } from "../db/schema.js";
 import {
   addCollaborator,
   getPublicShare,
@@ -34,7 +34,7 @@ const updatePublicShareSchema = z.object({
 });
 
 export async function listErProjects(req, res) {
-  const rows = await db
+  const owned = await db
     .select({
       id: erProjects.id,
       name: erProjects.name,
@@ -46,7 +46,35 @@ export async function listErProjects(req, res) {
     .where(eq(erProjects.userId, req.user.id))
     .orderBy(desc(erProjects.updatedAt));
 
-  return res.json({ projects: rows });
+  const requesterEmail = req.user.email?.toLowerCase?.() || "";
+
+  const shared = await db
+    .select({
+      id: erProjects.id,
+      name: erProjects.name,
+      erJson: erProjects.erJson,
+      createdAt: erProjects.createdAt,
+      updatedAt: erProjects.updatedAt,
+      permission: projectCollaborators.permission,
+      collaboratorStatus: projectCollaborators.status,
+      ownerEmail: users.email,
+    })
+    .from(projectCollaborators)
+    .innerJoin(erProjects, eq(projectCollaborators.projectId, erProjects.id))
+    .innerJoin(users, eq(erProjects.userId, users.id))
+    .where(
+      and(
+        eq(projectCollaborators.projectType, "er"),
+        ne(erProjects.userId, req.user.id),
+        or(
+          eq(projectCollaborators.collaboratorUserId, req.user.id),
+          eq(projectCollaborators.collaboratorEmail, requesterEmail),
+        ),
+      ),
+    )
+    .orderBy(desc(erProjects.updatedAt));
+
+  return res.json({ owned, shared });
 }
 
 export async function getErProject(req, res) {
